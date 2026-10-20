@@ -1,0 +1,62 @@
+---
+title: "Updating"
+description: "Pull the latest Atrium image and restart your container to update."
+---
+
+Updating Atrium means pulling a newer version of the Docker image and restarting the container. Database migrations run automatically on startup — you do not need to run them manually.
+
+<Warning>
+Check the [changelog](https://github.com/Vibra-Labs/Atrium/blob/main/CHANGELOG.md) before updating. Breaking changes, new required environment variables, or other migration notes are listed there.
+</Warning>
+
+<Note>
+Your data is stored in Docker volumes, not inside the image. Pulling a new image and restarting the container does not delete your database or uploaded files.
+</Note>
+
+## Docker
+
+<Steps>
+  <Step title="Pull the latest image">
+    ```bash
+    docker pull vibralabs/atrium:latest
+    ```
+  </Step>
+
+  <Step title="Restart the container">
+    ```bash
+    docker stop atrium
+    docker rm atrium
+    docker run -d \
+      --name atrium \
+      -p 8080:8080 \
+      -v atrium-db:/var/lib/postgresql/data \
+      -v atrium-uploads:/app/uploads \
+      -e BETTER_AUTH_SECRET=your-secret-here \
+      vibralabs/atrium:latest
+    ```
+
+    Use the same `docker run` flags you used when you first installed Atrium.
+  </Step>
+</Steps>
+
+## Docker Compose
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+This pulls the latest image for every service in your `docker-compose.yml` and recreates any containers that have a newer image available.
+
+## Unraid
+
+In the Unraid Docker UI, click the container icon and select **Force Update**.
+
+<Note>
+Restarting the container in Unraid does not pull a newer image. You must use **Force Update** to fetch the latest version from Docker Hub.
+</Note>
+
+## What happens on startup
+
+When the container starts after an update, Atrium automatically applies any database schema changes. This is safe to run repeatedly — only new changes are applied.
+
+If your database connection goes through a pooler like PgBouncer, set `SKIP_DB_PUSH=true` to skip the automatic schema sync. You'll need to provide a `DIRECT_URL` for a non-pooled connection instead. See [Docker](/self-hosting/docker#connection-poolers-pgbouncer) for details.

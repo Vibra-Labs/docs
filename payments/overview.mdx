@@ -1,0 +1,62 @@
+---
+title: "Payments Overview"
+description: "Accept invoice payments from clients via Stripe using Direct Keys or Stripe Connect."
+---
+
+Atrium integrates with [Stripe](https://stripe.com) to let clients pay invoices directly from the portal. You choose one of two modes depending on how you're set up.
+
+## Modes at a glance
+
+| | **Direct Keys** | **Stripe Connect** |
+|---|---|---|
+| **How it works** | Paste your Stripe secret key into Atrium settings | Connect your Stripe account via OAuth |
+| **Setup complexity** | Minimal | Moderate (env vars + Stripe platform setup) |
+| **Best for** | Single agency or freelancer | Platform setups, multiple organizations |
+| **Key storage** | Encrypted in your database | OAuth token; no secret key stored |
+| **Webhook setup** | Automatic | Manual (one endpoint in Stripe dashboard) |
+
+## Payment flow
+
+Once payments are configured, the flow works like this:
+
+1. You send an invoice to a client — it appears in the portal under their project.
+2. The client clicks **Pay Invoice** in the portal.
+3. Atrium opens a Stripe Checkout session in a new tab.
+4. The client completes payment on Stripe's hosted checkout page.
+5. Stripe sends a `checkout.session.completed` webhook to Atrium.
+6. Atrium marks the invoice as **paid** automatically.
+
+No manual reconciliation required.
+
+## Accepted payment methods
+
+After connecting Stripe, you can choose which payment methods to offer clients from **Settings → System → Client Payments → Accepted payment methods**. Available methods depend on your Stripe account's capabilities.
+
+Supported methods include: Card, ACH bank transfer, Link, SEPA Direct Debit, iDEAL, Bacs Direct Debit, Klarna, Afterpay/Clearpay, Affirm, and Cash App Pay.
+
+<Note>
+  US bank account (ACH) is only available when `STRIPE_CURRENCY` is set to `usd`. SEPA and iDEAL require `eur`. Methods not active on your Stripe account are shown as disabled.
+</Note>
+
+## Choosing a mode
+
+**Use Direct Keys if:**
+- You're a single agency or freelancer
+- You want the simplest possible setup
+- You'd rather not configure environment variables beyond `API_URL`
+
+**Use Stripe Connect if:**
+- You're building a platform where multiple organizations connect their own Stripe accounts
+- You prefer OAuth over storing a raw secret key
+- You need to listen to events across connected accounts
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Direct Keys" icon="key" href="/payments/stripe-direct">
+    Set up payments by pasting your Stripe secret key.
+  </Card>
+  <Card title="Stripe Connect" icon="link" href="/payments/stripe-connect">
+    Connect via OAuth for platform-level Stripe integration.
+  </Card>
+</CardGroup>

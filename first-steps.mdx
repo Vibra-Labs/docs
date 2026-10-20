@@ -1,0 +1,131 @@
+---
+title: "First Steps"
+description: "Create your account, set up your first project, and invite your first client after installing Atrium."
+---
+
+Once Atrium is running at `http://localhost:8080` (or your domain), here's what to do next.
+
+## Create your account
+
+<Steps>
+  <Step title="Sign up">
+    Open `http://localhost:8080/signup` in your browser.
+
+    The **first account created** becomes the organization owner automatically. This account has full access to all settings and cannot be demoted.
+
+    Enter your name, email address, and a password, then click **Create account**.
+
+    <Note>
+      If you haven't configured a Resend API key, magic link sign-in won't work yet — use email/password for now. You can add email configuration in settings later.
+    </Note>
+  </Step>
+
+  <Step title="Name your organization">
+    After signing up, Atrium prompts you to name your organization. This name appears in the client portal and in outbound emails, so use something your clients will recognize — typically your agency or freelance brand name.
+  </Step>
+</Steps>
+
+## Tour the dashboard
+
+After setup you land on the **dashboard** — your team's workspace. The key sections are:
+
+- **Projects** — all active and archived projects for your organization
+- **Clients** — the people you've invited to access their portals
+- **Settings → Branding** — colors and logo applied to the client portal
+
+The dashboard is only accessible to team members with an owner or admin role. Clients never see it.
+
+## Understand the two interfaces
+
+Atrium has two distinct sides:
+
+| Interface | URL | Who uses it |
+|---|---|---|
+| Dashboard | `/dashboard` | Your team (owners and admins) |
+| Client portal | `/portal` | Your clients (members) |
+
+When a client receives an invite and signs in, they land on `/portal` — not the dashboard. They see only the projects they've been added to, can download files you've shared, and can pay invoices.
+
+## Roles
+
+Three roles control what people can do:
+
+| Role | What they can do |
+|---|---|
+| **Owner** | Full access: manage settings, billing, branding, and all team members. One per organization. |
+| **Admin** | Create and manage projects, clients, files, and invoices. Cannot change org-level settings. |
+| **Client** (member) | Read-only access to their assigned projects via `/portal`. Can download files and pay invoices. |
+
+When you invite a team member, you assign them the admin role. When you invite a client, they receive the client (member) role.
+
+## Create your first project
+
+<Steps>
+  <Step title="Go to Projects">
+    From the dashboard, click **Projects** in the sidebar, then click **New project**.
+  </Step>
+
+  <Step title="Fill in the basics">
+    Give the project a name and an optional description. You can also set a due date and assign it to a client at this stage — or do both later.
+  </Step>
+
+  <Step title="Set your status pipeline">
+    Each organization has a shared status pipeline — the stages a project moves through (for example: *Discovery*, *In Progress*, *Review*, *Complete*).
+
+    Go to **Settings → Pipeline** to customize the stages. Changes apply to all projects in your organization.
+
+    <Tip>
+      Keep the pipeline short. Four to six stages is usually enough. You can always rename or reorder stages later without affecting existing projects.
+    </Tip>
+  </Step>
+
+  <Step title="Upload a file (optional)">
+    Inside the project, click **Files** and upload something. Files you upload here are visible to any client assigned to this project via the portal.
+
+    The default storage backend saves files locally. To use S3, MinIO, or Cloudflare R2 instead, see the storage configuration docs.
+  </Step>
+</Steps>
+
+## Invite a client
+
+<Steps>
+  <Step title="Open the Clients section">
+    Click **Clients** in the dashboard sidebar.
+  </Step>
+
+  <Step title="Send an invitation">
+    Click **Invite client**, enter their email address, and send the invitation.
+
+    Atrium emails them a sign-up link. When they accept and create their account, they're assigned the client (member) role and added to your organization.
+
+    <Note>
+      Client invitations require a configured email provider (`RESEND_API_KEY`). If email isn't set up yet, you can manually share the signup link displayed after sending the invite.
+    </Note>
+  </Step>
+
+  <Step title="Add them to a project">
+    Once the client has an account, open the project you want to share with them and click **Add client**. Select their name from the list.
+
+    They'll see this project the next time they visit `http://localhost:8080/portal`.
+  </Step>
+</Steps>
+
+## What your client sees
+
+When your client signs in, they land on `/portal`. From there they can:
+
+- View all projects they've been added to and see the current status of each
+- Download any files you've shared on those projects
+- Read project updates you've posted
+- View and pay invoices you've sent them via Stripe Checkout
+
+They cannot see other clients' projects, your internal dashboard, or any organization settings.
+
+## Next steps
+
+With your first project running and a client invited, you're ready to explore the rest of Atrium:
+
+- **Branding** — add your logo and colors so the portal matches your brand
+- **Invoicing** — create and send an invoice from inside a project
+- **File storage** — connect S3, MinIO, or Cloudflare R2 for scalable file delivery
+- **Email** — configure Resend so magic links and invite emails work automatically

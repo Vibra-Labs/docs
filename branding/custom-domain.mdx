@@ -1,0 +1,99 @@
+---
+title: "Custom Domain"
+description: "Serve the Atrium client portal under your own domain or subdomain using a reverse proxy."
+---
+
+By default, your client portal is available at `<your-atrium-domain>/portal`. You can serve it at any domain or subdomain you control — for example, `portal.agency.com` — by placing a reverse proxy in front of Atrium.
+
+<Note>
+  Custom domain management is not a built-in Atrium UI setting. This is infrastructure-level configuration that you handle at your server or DNS layer. Native custom domain support is planned for a future release.
+</Note>
+
+## How it works
+
+A reverse proxy sits in front of your Atrium instance and forwards requests from your custom domain to Atrium's container port. From your client's perspective, they visit `portal.agency.com` and see a fully branded Atrium portal.
+
+```
+Client browser → portal.agency.com → [reverse proxy] → Atrium (port 8080)
+```
+
+You can use any reverse proxy that supports this pattern: **Caddy**, **nginx**, or **Traefik** are common choices.
+
+## Prerequisites
+
+- A domain or subdomain you control (e.g. `portal.agency.com`)
+- An A or CNAME DNS record pointing that subdomain to your server's IP address
+- Atrium running and accessible on your server (default port `8080`)
+
+## Example: Caddy
+
+Caddy automatically provisions TLS certificates via Let's Encrypt, which makes it the simplest option.
+
+Create or edit your `Caddyfile`:
+
+```caddyfile
+portal.agency.com {
+    reverse_proxy localhost:8080
+}
+```
+
+Reload Caddy:
+
+```bash
+caddy reload
+```
+
+Caddy handles HTTPS automatically. Your clients can now reach the portal at `https://portal.agency.com/portal`.
+
+<Tip>
+  If you want `portal.agency.com` (no path) to go directly to the portal, add a redirect rule:
+
+  ```caddyfile
+  portal.agency.com {
+      redir / /portal 301
+      reverse_proxy localhost:8080
+  }
+  ```
+</Tip>
+
+## Example: nginx
+
+```nginx
+server {
+    listen 80;
+    server_name portal.agency.com;
+
+    # Redirect HTTP to HTTPS
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name portal.agency.com;
+
+    ssl_certificate     /etc/letsencrypt/live/portal.agency.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/portal.agency.com/privkey.pem;
+
+    location / {
+        proxy_pass         http://localhost:8080;
+        proxy_set_header   Host $host;
+        proxy_set_header   X-Real-IP $remote_addr;
+        proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+## DNS setup
+
+Point your subdomain at your server before configuring the proxy. For most DNS providers, add an **A record**:
+
+| Type | Name   | Value           |
+|------|--------|-----------------|
+| A    | portal | `<your-server-ip>` |
+
+DNS changes can take a few minutes to several hours to propagate.
+
+<Note>
+  Stripe webhooks and OAuth callbacks use your `API_URL`, not the portal domain. Make sure `API_URL` in your `.env` points to your Atrium API's public HTTPS address. See the [Payments](/payments/overview) docs for details.
+</Note>

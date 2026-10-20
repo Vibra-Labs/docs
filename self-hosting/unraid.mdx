@@ -1,0 +1,127 @@
+---
+title: "Unraid"
+description: "Install Atrium on Unraid via Community Applications or manually through the Docker UI."
+---
+
+Atrium runs as a single Docker container on Unraid. The image includes the API, web app, Caddy reverse proxy, and a built-in PostgreSQL database — no separate database container required.
+
+## Prerequisites
+
+- Unraid 6.x or 7.x
+- Docker enabled in Unraid settings
+
+## Install via Community Applications
+
+An official Community Applications template is available. Search for **Atrium** in the Apps tab and click **Install**. The template pre-fills the repository, port mapping, and volume paths described below.
+
+## Manual installation
+
+If you prefer to set up the container yourself:
+
+<Steps>
+  <Step title="Open the Docker UI">
+    In the Unraid web UI, go to the **Docker** tab and click **Add Container**.
+  </Step>
+
+  <Step title="Set the repository">
+    Set **Repository** to:
+
+    ```
+    vibralabs/atrium:latest
+    ```
+
+    Set **Network Type** to `Bridge`.
+  </Step>
+
+  <Step title="Map the port">
+    Add a port mapping:
+
+    | Host port | Container port |
+    |---|---|
+    | `8080` (or any available port on your server) | `8080` |
+
+    <Warning>
+    The container port must always be `8080`. Atrium listens internally on port 8080 and this cannot be changed. Only the host port is yours to choose.
+    </Warning>
+  </Step>
+
+  <Step title="Add environment variables">
+    Add the following environment variables. In the Unraid UI, make sure both the **Name/Key** field and the **Value** field are filled in for each variable — if the Key field is empty, Unraid silently drops the variable and the container will fail to start.
+
+    | Variable | Value | Notes |
+    |---|---|---|
+    | `BETTER_AUTH_SECRET` | *(random string, min 32 chars)* | Generate one in the Unraid terminal: `openssl rand -base64 32` |
+    | `SECURE_COOKIES` | `false` | Required when accessing over plain HTTP — see [Why SECURE_COOKIES=false](#why-secure_cookiesfalse) |
+  </Step>
+
+  <Step title="Map the volumes">
+    Add the following path mappings:
+
+    | Host path | Container path | Purpose |
+    |---|---|---|
+    | `/mnt/user/appdata/atrium/db` | `/var/lib/postgresql/data` | PostgreSQL data |
+    | `/mnt/user/appdata/atrium/uploads` | `/app/uploads` | Uploaded files |
+  </Step>
+
+  <Step title="Apply and open">
+    Click **Apply**. Once the container starts, open `http://your-unraid-ip:8080` (or your chosen host port) and create your account.
+  </Step>
+</Steps>
+
+## Why SECURE_COOKIES=false?
+
+By default, Atrium sets cookies with the `Secure` flag, which instructs browsers to only send them over HTTPS connections. When you access Atrium over plain HTTP (typical for local-network Unraid setups), the browser silently drops these cookies and every request returns a `403 Invalid or missing CSRF token` error.
+
+Setting `SECURE_COOKIES=false` removes the `Secure` flag so cookies work over plain HTTP.
+
+<Warning>
+Disabling secure cookies exposes session tokens to interception on the network. If you add an HTTPS reverse proxy (Nginx Proxy Manager, Caddy, Traefik) in front of Atrium, remove the `SECURE_COOKIES=false` variable or set it to `true`.
+</Warning>
+
+## Optional configuration
+
+<AccordionGroup>
+  <Accordion title="External database">
+    To use an existing PostgreSQL instance instead of the built-in one, add these variables:
+
+    | Variable | Value |
+    |---|---|
+    | `USE_BUILT_IN_DB` | `false` |
+    | `DATABASE_URL` | `postgresql://user:password@your-db-host:5432/atrium` |
+
+    You can remove the `/var/lib/postgresql/data` volume mapping when using an external database.
+  </Accordion>
+
+  <Accordion title="Email notifications">
+    To enable email notifications (invitations, password resets):
+
+    | Variable | Value |
+    |---|---|
+    | `RESEND_API_KEY` | Your Resend API key |
+    | `EMAIL_FROM` | `noreply@yourdomain.com` |
+  </Accordion>
+
+  <Accordion title="S3 file storage">
+    To use S3-compatible storage instead of local disk:
+
+    | Variable | Value |
+    |---|---|
+    | `STORAGE_PROVIDER` | `s3`, `minio`, or `r2` |
+    | `S3_ENDPOINT` | Your S3-compatible endpoint URL |
+    | `S3_BUCKET` | Bucket name |
+    | `S3_ACCESS_KEY` | Access key |
+    | `S3_SECRET_KEY` | Secret key |
+
+    You can remove the `/app/uploads` volume mapping when using S3 storage.
+  </Accordion>
+</AccordionGroup>
+
+## Updating
+
+In the Unraid Docker UI, click the container icon and select **Force Update**.
+
+<Note>
+Simply restarting the container does not pull a newer image. You must use **Force Update** to fetch the latest version from Docker Hub. Database migrations run automatically when the container starts.
+</Note>
+
+See [Updating](/self-hosting/updating) for more details.

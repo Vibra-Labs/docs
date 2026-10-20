@@ -1,0 +1,153 @@
+---
+title: "Stripe Connect"
+description: "Connect your Stripe account to Atrium via OAuth using Stripe Connect's Standard flow."
+---
+
+Stripe Connect mode links your Stripe account to Atrium via OAuth rather than a raw secret key. This uses Stripe Connect's Standard OAuth flow — your account connects to an Atrium platform app, and Atrium processes payments on your behalf.
+
+## Prerequisites
+
+- A Stripe account
+- Your Atrium instance running at a publicly accessible HTTPS URL
+- Access to your server's environment variables
+
+## Setup
+
+<Steps>
+  <Step title="Create a Stripe Connect platform">
+    1. Go to [dashboard.stripe.com/settings/connect](https://dashboard.stripe.com/settings/connect).
+    2. Complete the platform profile if prompted.
+    3. Copy your **Client ID** — it starts with `ca_`.
+
+    <Note>
+      If you see a "Standard OAuth is disabled" message here, enable the Standard OAuth flow before continuing. The toggle is on the same Connect settings page.
+    </Note>
+  </Step>
+
+  <Step title="Add the OAuth redirect URL">
+    On the same Connect settings page, under **Redirects**, add the following URL (replacing `your-atrium-domain.com` with your actual domain):
+
+    ```
+    https://your-atrium-domain.com/api/payments/connect/callback
+    ```
+
+    Stripe will redirect back to this URL after your account authorizes the connection.
+  </Step>
+
+  <Step title="Create a webhook endpoint">
+    Go to **Developers → Webhooks** in the Stripe Dashboard and create a new endpoint:
+
+    - **URL:** `https://your-atrium-domain.com/api/payments/webhook`
+    - **Events to listen for:**
+      - `checkout.session.completed`
+      - `checkout.session.expired`
+      - `account.application.deauthorized`
+
+    <Warning>
+      After creating the endpoint, find the **"Listen to events on Connected accounts"** toggle on the webhook detail page and enable it. Without this, Atrium will not receive payment events from connected accounts and invoices will not be marked as paid.
+    </Warning>
+
+    After creating the webhook, copy the **Signing secret** — it starts with `whsec_`.
+  </Step>
+
+  <Step title="Set environment variables">
+    Add the following to your `.env` file:
+
+    ```env
+    STRIPE_CONNECT_CLIENT_ID="ca_..."          # From Connect settings (Step 1)
+    STRIPE_CONNECT_WEBHOOK_SECRET="whsec_..."  # From the webhook you created (Step 3)
+    STRIPE_CURRENCY="usd"                      # ISO 4217 lowercase currency code
+    STRIPE_MODE="test"                         # "test" or "live"
+    STRIPE_TEST_SECRET_KEY="sk_test_..."       # Your platform's Stripe secret key
+    ```
+
+    For live mode, set `STRIPE_MODE="live"` and use `STRIPE_LIVE_SECRET_KEY` instead of `STRIPE_TEST_SECRET_KEY`:
+
+    ```env
+    STRIPE_MODE="live"
+    STRIPE_LIVE_SECRET_KEY="sk_live_..."
+    ```
+
+    Restart Atrium after updating environment variables.
+  </Step>
+
+  <Step title="Connect your Stripe account">
+    Once your instance is running with the environment variables above:
+
+    1. Log in to the Atrium dashboard as an **owner**.
+    2. Go to **Settings → System**.
+    3. Scroll to the **Client Payments** section.
+    4. Click **Connect with Stripe**.
+
+    This starts the OAuth flow. You'll be redirected to Stripe to authorize the connection. After completing it, you're redirected back to Atrium and a green **Connected** badge appears, confirming your account is linked.
+  </Step>
+</Steps>
+
+## Environment variable reference
+
+| Variable | Required | Description |
+|---|---|---|
+| `STRIPE_CONNECT_CLIENT_ID` | Yes | Platform Client ID from Stripe Connect settings (`ca_...`) |
+| `STRIPE_CONNECT_WEBHOOK_SECRET` | Yes | Signing secret from the webhook endpoint (`whsec_...`) |
+| `STRIPE_CURRENCY` | Yes | ISO 4217 currency code, lowercase (e.g. `usd`, `eur`) |
+| `STRIPE_MODE` | Yes | `test` or `live` |
+| `STRIPE_TEST_SECRET_KEY` | In test mode | Platform's Stripe secret key for test mode (`sk_test_...`) |
+| `STRIPE_LIVE_SECRET_KEY` | In live mode | Platform's Stripe secret key for live mode (`sk_live_...`) |
+
+<Note>
+  `STRIPE_CURRENCY` applies to all invoices across the platform. Set it to the currency your clients invoice in. Defaults to `usd` if not set.
+</Note>
+
+## Disconnecting
+
+To disconnect your Stripe account, click **Disconnect Stripe** in **Settings → System → Client Payments**. Atrium deauthorizes the OAuth connection on Stripe's side and clears the stored account ID. Clients will no longer be able to pay invoices until you reconnect.
+
+## Local development
+
+Stripe cannot deliver webhooks to `localhost`. Use the Stripe CLI to forward Connect webhook events to your local API:
+
+```bash
+# Install the Stripe CLI (macOS example)
+brew install stripe/stripe-cli/stripe
+
+# Log in
+stripe login
+
+# Forward Connect events to your local API
+stripe listen \
+  --forward-connect-to http://localhost:3001/api/payments/webhook \
+  --events checkout.session.completed,checkout.session.expired,account.application.deauthorized
+```
+
+The CLI prints a `whsec_...` signing secret when it starts. Use that value as `STRIPE_CONNECT_WEBHOOK_SECRET` in your `.env`. Keep the CLI running while testing.
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title='"Standard OAuth is disabled"'>
+    Go to [Stripe Dashboard → Settings → Connect](https://dashboard.stripe.com/settings/connect) and enable the Standard OAuth flow.
+  </Accordion>
+
+  <Accordion title="Invoice paid but still shows as overdue">
+    The webhook did not fire or failed verification. Check the following:
+
+    1. In Stripe Dashboard, go to **Developers → Webhooks → your endpoint → Recent deliveries** and look for failed or undelivered events.
+    2. Confirm the webhook endpoint has **"Listen to events on Connected accounts"** enabled. This is required for Connect mode.
+    3. Verify `STRIPE_CONNECT_WEBHOOK_SECRET` in your `.env` matches the signing secret shown on the webhook detail page in the Stripe Dashboard.
+    4. Make sure `STRIPE_MODE` matches the mode of the connected account (test vs. live).
+  </Accordion>
+
+  <Accordion title='"Online payments are not configured" shown to clients'>
+    Either no Stripe account has been connected via OAuth, or the connection was revoked. Go to **Settings → System → Client Payments** and click **Connect with Stripe** to re-authorize.
+  </Accordion>
+
+  <Accordion title="OAuth redirect fails or shows an error">
+    - Confirm the redirect URL in your Stripe Connect settings exactly matches `https://your-atrium-domain.com/api/payments/connect/callback`.
+    - Check that `STRIPE_CONNECT_CLIENT_ID` in your `.env` matches the Client ID in Stripe Connect settings.
+    - Check your Atrium API logs for additional context.
+  </Accordion>
+
+  <Accordion title="Account deauthorized unexpectedly">
+    If your Stripe account is deauthorized (e.g. the platform app is removed from Stripe), Atrium receives an `account.application.deauthorized` event and automatically disables payments for your organization. Reconnect via **Settings → System → Client Payments**.
+  </Accordion>
+</AccordionGroup>

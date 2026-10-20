@@ -1,0 +1,127 @@
+---
+title: "Direct Keys"
+description: "Accept client invoice payments by pasting your Stripe secret key into Atrium settings."
+---
+
+Direct Keys mode is the simplest way to connect Stripe. Paste your Stripe secret key into **Settings → System → Client Payments** and Atrium handles everything else — including automatically registering the webhook endpoint on your Stripe account.
+
+## Prerequisites
+
+- A Stripe account (test or live)
+- Your Atrium instance running at a publicly accessible HTTPS URL
+
+## Setup
+
+<Steps>
+  <Step title="Get your Stripe secret key">
+    Log in to the [Stripe Dashboard](https://dashboard.stripe.com/apikeys).
+
+    - For test mode: copy the key starting with `sk_test_...`
+    - For live mode: copy the key starting with `sk_live_...`
+
+    Atrium also accepts restricted keys (`rk_test_...` / `rk_live_...`) if you prefer to limit the key's permissions.
+  </Step>
+
+  <Step title="Set your API URL">
+    Stripe needs to reach your Atrium instance to deliver webhook events. Make sure `API_URL` in your `.env` file is set to your public HTTPS URL:
+
+    ```env
+    API_URL="https://your-atrium-domain.com"
+    ```
+
+    <Warning>
+      `API_URL` must be a publicly reachable HTTPS URL — not `localhost` or a private IP. If Stripe cannot reach this URL, webhook registration will fail and invoice paid status will not update automatically.
+    </Warning>
+
+    Restart Atrium after changing environment variables.
+  </Step>
+
+  <Step title="Enter the key in Atrium">
+    1. Log in to the Atrium dashboard as an **owner**.
+    2. Go to **Settings → System**.
+    3. Scroll to the **Client Payments** section.
+    4. Enter your Stripe secret key in the input field and click **Save & Connect**.
+
+    Atrium will verify the key, register a webhook endpoint on your Stripe account, and store the signing secret automatically. No manual webhook setup is needed.
+
+    A green **Connected** badge (showing **Test mode** or **Live**) confirms the connection succeeded.
+  </Step>
+</Steps>
+
+## Environment variables
+
+Direct Keys mode requires only one environment variable:
+
+```env
+API_URL="https://your-atrium-domain.com"
+```
+
+No Stripe-specific env vars (`STRIPE_CONNECT_CLIENT_ID`, etc.) are needed for Direct Keys mode.
+
+## What Atrium does automatically
+
+When you save your key, Atrium:
+
+1. Verifies the key by calling Stripe's API
+2. Creates a webhook endpoint at `https://<API_URL>/api/payments/webhook/<orgId>` on your Stripe account, listening for `checkout.session.completed` and `checkout.session.expired`
+3. Stores the webhook signing secret in your database (encrypted)
+
+If you later remove your key, Atrium also deletes the webhook endpoint from Stripe.
+
+## Local development
+
+Stripe cannot deliver webhooks to `localhost`. Use a tunnel to expose your local API:
+
+<Tabs>
+  <Tab title="cloudflared">
+    ```bash
+    # No account required
+    cloudflared tunnel --url http://localhost:3001
+    ```
+  </Tab>
+  <Tab title="ngrok">
+    ```bash
+    ngrok http 3001
+    ```
+  </Tab>
+</Tabs>
+
+Copy the tunnel URL (e.g. `https://abc123.trycloudflare.com`) and set it as `API_URL` in your `.env`, then enter your Stripe key in settings. The webhook endpoint will be registered pointing to the tunnel URL.
+
+<Note>
+  Keep the tunnel running while testing. If you restart the tunnel and get a new URL, you'll need to remove and re-add your Stripe key so Atrium can register a new webhook at the updated URL.
+</Note>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title='"Failed to register webhook on your Stripe account"'>
+    Your `API_URL` is not publicly accessible from Stripe's servers.
+
+    **Check:**
+    - `API_URL` starts with `https://` (not `http://` or `localhost`)
+    - The URL resolves from the public internet (test with `curl https://your-atrium-domain.com/api/health`)
+    - Your firewall or hosting provider allows inbound HTTPS traffic
+
+    For local dev, use a cloudflared or ngrok tunnel as described above.
+  </Accordion>
+
+  <Accordion title="Invoice paid but still shows as overdue">
+    The webhook did not fire or failed signature verification.
+
+    **Check:**
+    1. In Stripe Dashboard, go to **Developers → Webhooks → your endpoint → Recent deliveries** and look for failed events.
+    2. Confirm `API_URL` matches the URL where Atrium is actually running.
+    3. If you changed `API_URL` after initial setup, remove and re-save your Stripe key to register a fresh webhook.
+  </Accordion>
+
+  <Accordion title='"Invalid Stripe key"'>
+    Atrium validates the key against Stripe's API when you save it. This error means the key is incorrect or has been revoked.
+
+    Verify the key in your [Stripe Dashboard](https://dashboard.stripe.com/apikeys) and ensure you copied the full value including the `sk_test_` or `sk_live_` prefix.
+  </Accordion>
+
+  <Accordion title='"Online payments are not configured" shown to clients'>
+    No Stripe key has been saved yet (or the key was removed). Go to **Settings → System → Client Payments** and enter your key.
+  </Accordion>
+</AccordionGroup>

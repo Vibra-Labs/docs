@@ -1,0 +1,263 @@
+---
+title: "File Storage"
+description: "Configure where Atrium stores uploaded files — local disk, Amazon S3, MinIO, or Cloudflare R2."
+---
+
+Atrium supports four file storage backends. Set `STORAGE_PROVIDER` to switch between them. All backends enforce the same `MAX_FILE_SIZE_MB` limit and expose the same upload and download behaviour to the rest of the application.
+
+<Tabs>
+  <Tab title="Local (default)">
+
+## Local storage
+
+Files are written to the container's filesystem under `UPLOAD_DIR`. This is the default and requires no additional configuration.
+
+**When to use:** Small self-hosted installations where you control the server and don't need to share storage across multiple instances.
+
+**What to watch out for:** Files stored on the local filesystem are lost if the container is removed. Always mount a Docker volume at the upload directory path.
+
+### Required variables
+
+| Variable | Value |
+|---|---|
+| `STORAGE_PROVIDER` | `local` (or omit — this is the default) |
+| `UPLOAD_DIR` | Path inside the container where files are written. Default: `./uploads` |
+
+### Docker run
+
+```bash
+docker run -d \
+  --name atrium \
+  -p 8080:8080 \
+  -v atrium-uploads:/app/uploads \
+  -e BETTER_AUTH_SECRET=$(openssl rand -base64 32) \
+  vibralabs/atrium:latest
+```
+
+### Docker Compose
+
+```yaml
+services:
+  atrium:
+    image: vibralabs/atrium:latest
+    ports:
+      - "8080:8080"
+    environment:
+      BETTER_AUTH_SECRET: "your-secret-here"
+      STORAGE_PROVIDER: "local"
+      UPLOAD_DIR: "./uploads"
+    volumes:
+      - atrium-db:/var/lib/postgresql/data
+      - atrium-uploads:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  atrium-db:
+  atrium-uploads:
+```
+
+<Note>
+  The volume mount path in your Compose file (`/app/uploads`) must match the value of `UPLOAD_DIR` inside the container. The default `UPLOAD_DIR` resolves to `/app/uploads` in the production image.
+</Note>
+
+  </Tab>
+  <Tab title="Amazon S3">
+
+## Amazon S3
+
+Files are stored in an S3 bucket in your AWS account. This is the recommended backend for production deployments that need durability and scalability without running additional infrastructure.
+
+### Required variables
+
+| Variable | Value |
+|---|---|
+| `STORAGE_PROVIDER` | `s3` |
+| `S3_BUCKET` | Your bucket name |
+| `S3_REGION` | AWS region where the bucket lives (e.g. `us-east-1`) |
+| `S3_ACCESS_KEY` | IAM access key ID |
+| `S3_SECRET_KEY` | IAM secret access key |
+
+### IAM permissions
+
+The IAM user or role you use needs the following permissions on your bucket:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::your-bucket-name/*"
+    }
+  ]
+}
+```
+
+### Docker Compose
+
+```yaml
+services:
+  atrium:
+    image: vibralabs/atrium:latest
+    ports:
+      - "8080:8080"
+    environment:
+      BETTER_AUTH_SECRET: "your-secret-here"
+      STORAGE_PROVIDER: "s3"
+      S3_BUCKET: "your-bucket-name"
+      S3_REGION: "us-east-1"
+      S3_ACCESS_KEY: "AKIAIOSFODNN7EXAMPLE"
+      S3_SECRET_KEY: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+    volumes:
+      - atrium-db:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  atrium-db:
+```
+
+<Note>
+  When using S3 storage you do not need to mount an uploads volume. Files go directly to your bucket.
+</Note>
+
+  </Tab>
+  <Tab title="MinIO">
+
+## MinIO
+
+Files are stored in a self-hosted MinIO instance. MinIO is S3-compatible, so Atrium uses the same S3 client internally — the only difference is that you point `S3_ENDPOINT` at your MinIO server instead of AWS.
+
+**When to use:** You want S3-compatible storage but prefer to keep everything on your own infrastructure.
+
+### Required variables
+
+| Variable | Value |
+|---|---|
+| `STORAGE_PROVIDER` | `minio` |
+| `S3_ENDPOINT` | URL of your MinIO server (e.g. `https://minio.example.com`) |
+| `S3_BUCKET` | Bucket name in MinIO |
+| `S3_REGION` | Any non-empty string — `us-east-1` works |
+| `S3_ACCESS_KEY` | MinIO access key (root user or access key) |
+| `S3_SECRET_KEY` | MinIO secret key |
+
+### Docker Compose (Atrium + MinIO)
+
+```yaml
+services:
+  atrium:
+    image: vibralabs/atrium:latest
+    ports:
+      - "8080:8080"
+    environment:
+      BETTER_AUTH_SECRET: "your-secret-here"
+      STORAGE_PROVIDER: "minio"
+      S3_ENDPOINT: "http://minio:9000"
+      S3_BUCKET: "atrium"
+      S3_REGION: "us-east-1"
+      S3_ACCESS_KEY: "minioadmin"
+      S3_SECRET_KEY: "minioadmin"
+    volumes:
+      - atrium-db:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: "minioadmin"
+      MINIO_ROOT_PASSWORD: "minioadmin"
+    volumes:
+      - minio-data:/data
+    restart: unless-stopped
+
+volumes:
+  atrium-db:
+  minio-data:
+```
+
+<Tip>
+  Create your bucket in MinIO before starting Atrium. You can do this through the MinIO console at port 9001, or with the `mc` CLI: `mc mb myminio/atrium`.
+</Tip>
+
+<Warning>
+  The example above uses the default MinIO credentials. Change `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD` before exposing MinIO to any network beyond localhost.
+</Warning>
+
+  </Tab>
+  <Tab title="Cloudflare R2">
+
+## Cloudflare R2
+
+Files are stored in Cloudflare R2. R2 is S3-compatible with no egress fees, making it cost-effective for portals with heavy file download traffic.
+
+### Required variables
+
+| Variable | Value |
+|---|---|
+| `STORAGE_PROVIDER` | `r2` |
+| `S3_ENDPOINT` | Your R2 endpoint: `https://<account-id>.r2.cloudflarestorage.com` |
+| `S3_BUCKET` | R2 bucket name |
+| `S3_REGION` | `us-east-1` (required by the SDK but ignored by R2) |
+| `S3_ACCESS_KEY` | R2 API token Access Key ID |
+| `S3_SECRET_KEY` | R2 API token Secret Access Key |
+
+### Finding your R2 endpoint
+
+Your R2 endpoint is in the format:
+
+```
+https://<ACCOUNT_ID>.r2.cloudflarestorage.com
+```
+
+Find your Account ID in the Cloudflare dashboard under **R2 Object Storage**. Generate an API token under **Manage R2 API tokens** and select **Object Read & Write** permissions scoped to your bucket.
+
+### Docker Compose
+
+```yaml
+services:
+  atrium:
+    image: vibralabs/atrium:latest
+    ports:
+      - "8080:8080"
+    environment:
+      BETTER_AUTH_SECRET: "your-secret-here"
+      STORAGE_PROVIDER: "r2"
+      S3_ENDPOINT: "https://abc123def456.r2.cloudflarestorage.com"
+      S3_BUCKET: "atrium-uploads"
+      S3_REGION: "us-east-1"
+      S3_ACCESS_KEY: "your-r2-access-key-id"
+      S3_SECRET_KEY: "your-r2-secret-access-key"
+    volumes:
+      - atrium-db:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  atrium-db:
+```
+
+<Note>
+  When using R2 storage you do not need to mount an uploads volume.
+</Note>
+
+  </Tab>
+</Tabs>
+
+---
+
+## Upload size limit
+
+The `MAX_FILE_SIZE_MB` variable controls the maximum size of a single upload. It applies to all storage backends.
+
+```bash
+MAX_FILE_SIZE_MB="100"  # Allow uploads up to 100 MB
+```
+
+The default is `50` MB. Set it to a higher value if your clients regularly upload large files such as design assets or video deliverables.

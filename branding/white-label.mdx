@@ -1,0 +1,80 @@
+---
+title: "White-Label Branding"
+description: "Customize your client portal with your own logo, colors, and company name."
+---
+
+Atrium's client portal is fully white-labeled. Your clients see your logo, your colors, and your company name — not Atrium's. All branding settings live in **Settings → System** under the **Branding** section.
+
+<Note>
+  Only owners and admins can update branding settings.
+</Note>
+
+## What branding applies to
+
+Your branding settings affect:
+
+- The client portal at `<your-atrium-domain>/portal` — logo in the header and sidebar, primary and accent colors throughout the UI
+- The dashboard sidebar — your logo and company name appear there for your team as well
+
+## Updating your branding
+
+<Steps>
+  <Step title="Open System Settings">
+    In the dashboard, navigate to **Settings → System**. Scroll to the **Branding** section.
+  </Step>
+
+  <Step title="Set your company name">
+    Enter your company name in the **Company Name** field. This appears in the portal header and the dashboard sidebar.
+  </Step>
+
+  <Step title="Upload your logo">
+    Click the upload area (or drag and drop a file onto it) to upload your logo.
+
+    - Supported formats: **PNG, JPEG, GIF, WebP**
+    - Maximum size: **5 MB**
+    - The logo is displayed in the portal header and the dashboard sidebar.
+
+    Once a logo is uploaded, use the **Replace** button to swap it or **Remove** to delete it.
+  </Step>
+
+  <Step title="Choose your colors">
+    Set a **Primary Color** and an **Accent Color** using the color pickers or by entering a hex value (e.g. `#006b68`).
+
+    - **Primary Color** — used for buttons, active states, and key UI elements
+    - **Accent Color** — used for secondary highlights and decorative elements
+
+    A live preview below the color pickers shows how your logo and colors will look together.
+  </Step>
+
+  <Step title="Optionally hide the logo">
+    Check **Hide logo in sidebar** if you don't have a logo ready yet or prefer a text-only header. This hides the logo in both the dashboard sidebar and the portal header, falling back to your company name.
+  </Step>
+
+  <Step title="Save your settings">
+    Click **Save Settings** at the bottom of the form. Your branding is applied immediately — refresh the portal to see the changes.
+  </Step>
+</Steps>
+
+## Portal URL
+
+Your clients access the branded portal at:
+
+```
+https://<your-atrium-domain>/portal
+```
+
+The `/portal` path is fixed. To serve the portal at a custom domain or subdomain (e.g. `portal.agency.com`), see [Custom Domain](/branding/custom-domain).
+
+## Color format
+
+Both color fields accept standard 6-digit hex values. Enter the `#` prefix:
+
+```
+#006b68
+```
+
+Values outside this format are rejected by Atrium when saving.
+
+<Tip>
+  Use your brand's primary button color for the **Primary Color** field. Clients will see it on the **Pay Invoice** button and other call-to-action elements throughout the portal.
+</Tip>

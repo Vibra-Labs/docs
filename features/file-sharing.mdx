@@ -1,0 +1,110 @@
+---
+title: "File Sharing"
+description: "Upload and deliver files to clients through projects, with support for local storage, S3, MinIO, and Cloudflare R2."
+---
+
+Atrium makes it easy to deliver files to clients without relying on email attachments or external drives. Files are uploaded to a project from the dashboard and become available for clients to download from the portal.
+
+---
+
+## Uploading files
+
+Only owners and admins can upload files from the dashboard.
+
+<Steps>
+  <Step title="Open a project">
+    Navigate to **Projects** and open the project you want to attach a file to.
+  </Step>
+  <Step title="Go to the Files tab">
+    Click the **Files** tab in the main content area.
+  </Step>
+  <Step title="Upload">
+    Click **Upload File** and select a file from your computer. The file uploads immediately and appears in the file list.
+  </Step>
+</Steps>
+
+Uploaded files are organized per project — a file belongs to exactly one project and is only visible to clients assigned to that project.
+
+<Note>
+  The default maximum file size is **50 MB**. Your administrator can raise or lower this limit by setting the `MAX_FILE_SIZE_MB` environment variable. The upload form enforces the configured limit and shows an error if the file is too large.
+</Note>
+
+### Client uploads
+
+Clients can also upload files from the **Files** tab in the portal. Client uploads follow the same per-project access rules — a client can only upload to projects they are assigned to.
+
+---
+
+## Downloading files
+
+Clients see all files attached to their projects in the **Files** tab of the portal. Each file shows the filename and file size, with a **Download** button that streams the file directly to their browser.
+
+Team members can download any file from the **Files** tab in the dashboard.
+
+---
+
+## File size limits
+
+| Setting | Default | How to change |
+|---|---|---|
+| Maximum file size | 50 MB | Set `MAX_FILE_SIZE_MB` in your environment |
+
+The limit applies to all file uploads, including files attached to updates and uploaded invoices. The server rejects any upload that exceeds the configured limit before storing the file.
+
+---
+
+## Storage backends
+
+Atrium abstracts file storage behind a configurable provider. You can store files on the local filesystem (the default) or in a cloud object store. Configure the backend using environment variables before starting the server — changing the backend after you already have uploaded files requires manually migrating existing data.
+
+<Tabs>
+  <Tab title="Local disk">
+    Files are stored on the server's local filesystem. This is the default and requires no additional configuration. Suitable for single-server deployments where the disk is persistent.
+
+    ```bash
+    STORAGE_PROVIDER=local
+    UPLOAD_DIR=./uploads   # optional, defaults to ./uploads
+    ```
+  </Tab>
+  <Tab title="Amazon S3">
+    Files are stored in an S3 bucket. Use this for production deployments where you want object storage durability and CDN support.
+
+    ```bash
+    STORAGE_PROVIDER=s3
+    S3_REGION=us-east-1
+    S3_ACCESS_KEY=your-access-key
+    S3_SECRET_KEY=your-secret-key
+    S3_BUCKET=your-bucket-name
+    ```
+  </Tab>
+  <Tab title="MinIO">
+    Files are stored in a self-hosted MinIO instance. MinIO is S3-compatible, making it a good choice if you want object storage without a dependency on AWS.
+
+    ```bash
+    STORAGE_PROVIDER=minio
+    S3_ENDPOINT=https://your-minio-host
+    S3_REGION=us-east-1
+    S3_ACCESS_KEY=your-minio-access-key
+    S3_SECRET_KEY=your-minio-secret-key
+    S3_BUCKET=your-bucket-name
+    ```
+  </Tab>
+  <Tab title="Cloudflare R2">
+    Files are stored in a Cloudflare R2 bucket. R2 is S3-compatible and has no egress fees, making it an economical choice for high-download workloads.
+
+    ```bash
+    STORAGE_PROVIDER=r2
+    S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+    S3_REGION=auto
+    S3_ACCESS_KEY=your-r2-access-key
+    S3_SECRET_KEY=your-r2-secret-key
+    S3_BUCKET=your-bucket-name
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+  Executable file extensions (`.exe`, `.sh`, `.bat`, and others) are blocked regardless of the storage backend. The server returns an error if you attempt to upload a blocked file type.
+</Warning>
+
+For a complete list of environment variables and deployment guidance, see the [Configuration reference](/configuration/environment-variables).

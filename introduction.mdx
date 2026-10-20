@@ -1,0 +1,58 @@
+---
+title: "Introduction"
+description: "Atrium is a self-hosted client portal that gives agencies and freelancers one place to manage projects, share files, and collect payments — all under your own brand."
+---
+
+## What is Atrium?
+
+Most agencies cobble together shared drives, spreadsheets, and scattered email threads to keep clients informed. Atrium replaces that friction with a single branded portal your clients log into directly.
+
+You host it. You own the data. Your clients see your brand — not a third-party platform's.
+
+Atrium is built for **agencies and freelancers** who deliver work to multiple clients and need a professional, organized way to do it. Each organization operates in complete isolation, so client A never sees anything belonging to client B.
+
+## Key features
+
+<CardGroup cols={2}>
+  <Card title="Project management" icon="folder-open">
+    Organize work into projects with a customizable status pipeline. Move cards through stages that match your actual workflow.
+  </Card>
+  <Card title="File sharing" icon="file-arrow-up">
+    Upload and deliver files from local storage, Amazon S3, MinIO, or Cloudflare R2. Clients download directly from the portal.
+  </Card>
+  <Card title="Invoicing" icon="file-invoice-dollar">
+    Create invoices with a draft/send workflow. Clients can pay directly via Stripe Checkout — no third-party billing portal required.
+  </Card>
+  <Card title="White-label branding" icon="palette">
+    Set your colors and logo. The client portal reflects your brand, not Atrium's.
+  </Card>
+  <Card title="Role-based access" icon="users">
+    Owner and admin roles for your team, a client (member) role for your clients. Everyone sees exactly what they should.
+  </Card>
+  <Card title="Magic link + password auth" icon="link">
+    Clients and team members can sign in with a magic link or email/password — no OAuth dependency required.
+  </Card>
+  <Card title="Global search" icon="magnifying-glass">
+    Full-text search across projects, files, clients, and updates from a single input.
+  </Card>
+  <Card title="Multi-tenant" icon="building">
+    Each agency operates as its own isolated organization. Self-host one instance, serve multiple brands.
+  </Card>
+</CardGroup>
+
+## The two sides of Atrium
+
+Atrium has two distinct interfaces that serve different audiences:
+
+- **Dashboard** (`/dashboard`) — your team's workspace. Manage projects, upload files, create invoices, and invite clients.
+- **Client portal** (`/portal`) — your clients' view. They see only the projects they're assigned to, download files, and pay invoices.
+
+## Self-hosted by design
+
+Atrium runs as a single Docker container on port 8080, with a built-in PostgreSQL database included. You can deploy it to any platform that runs containers — Docker Compose, Coolify, Portainer, Unraid, Synology, and more.
+
+Because you're self-hosting, your client data never passes through a vendor's servers.
+
+## Get started
+
+Ready to run Atrium? The [Quick Start](/quickstart) guide gets you up in under five minutes with a single Docker command.

@@ -1,0 +1,156 @@
+---
+title: "Projects"
+description: "Create and manage client projects with a customizable status pipeline, tasks, updates, and file delivery."
+---
+
+Projects are the core unit of work in Atrium. Each project holds its tasks, updates, files, invoices, and assigned clients in one place. Only team members with the **owner** or **admin** role can create and edit projects. Clients see only the projects they are explicitly assigned to.
+
+## Creating a project
+
+<Steps>
+  <Step title="Open Projects">
+    From the dashboard, click **Projects** in the sidebar, then click **New Project**.
+  </Step>
+  <Step title="Fill in the details">
+    Enter a **Name** (required, up to 255 characters) and an optional **Description** (up to 2,000 characters). You can also set a **Start date** and **End date** to define the project timeline.
+  </Step>
+  <Step title="Set an initial status">
+    Choose a status from the pipeline your organization has configured. If you leave this blank, the project starts at the first status in your pipeline.
+  </Step>
+  <Step title="Assign clients">
+    Select one or more clients from your organization to give them access to this project in the portal.
+  </Step>
+  <Step title="Save">
+    Click **Create Project**. The project opens immediately and you can begin adding updates, tasks, and files.
+  </Step>
+</Steps>
+
+<Tip>
+  You can update the name, description, dates, assigned clients, and labels at any time from the project detail sidebar.
+</Tip>
+
+---
+
+## Status pipeline
+
+Every project moves through a sequence of statuses — for example, **Kickoff → In Progress → Review → Completed**. Atrium lets you define your own pipeline per organization instead of using fixed built-in stages.
+
+### How statuses work
+
+The status pipeline appears in the project detail sidebar. Click any stage in the pipeline to move the project forward or backward. Each status has a name, a color, and an order. The current status is highlighted.
+
+Clients see a read-only progress bar in the portal that reflects the same pipeline — they cannot change the status themselves.
+
+### Customizing statuses
+
+Navigate to **Settings → System** (owner or admin access required) to add, rename, reorder, or delete statuses for your organization. Changes apply to all projects immediately.
+
+<Warning>
+  Deleting a status that is currently assigned to one or more projects will not delete those projects. Their status will be cleared until you manually reassign them.
+</Warning>
+
+---
+
+## Labels
+
+You can attach one or more labels (tags) to a project to group or filter across your portfolio. Labels are created and managed at the organization level and can be applied to projects, clients, tasks, and files.
+
+To add a label to a project, click the label picker in the **Labels** section of the project sidebar and select from the list. To remove a label, click it again to deselect.
+
+<Note>
+  Labels are visible only to team members in the dashboard. Clients do not see labels in the portal.
+</Note>
+
+---
+
+## Project updates
+
+Updates are timestamped progress notes that you post to a project. They appear in the **Updates** tab on the project detail page and are visible to assigned clients in the portal.
+
+### Posting an update
+
+<Steps>
+  <Step title="Go to the Updates tab">
+    Open a project and click the **Updates** tab.
+  </Step>
+  <Step title="Write your update">
+    Click **Add Update** and type your message (up to 5,000 characters). You can optionally attach a single image or file (up to 10 MB).
+  </Step>
+  <Step title="Publish">
+    Click **Post**. The update is immediately visible to assigned clients in the portal.
+  </Step>
+</Steps>
+
+Clients can also post updates from the portal — they are subject to the same project access check, so a client can only post to projects they are assigned to.
+
+### Comments
+
+Each update supports threaded comments. Both team members and assigned clients can leave comments on an update to continue the conversation without creating a new top-level update.
+
+### Deleting updates
+
+Only owners and admins can delete updates. Click the delete icon on the update card to remove it permanently.
+
+---
+
+## Tasks
+
+Tasks live in the **Tasks** tab of a project. They are visible to assigned clients in the portal in a read-only checklist view.
+
+### Creating a task
+
+<Steps>
+  <Step title="Open the Tasks tab">
+    Navigate to a project and click **Tasks**.
+  </Step>
+  <Step title="Add a task">
+    Click **Add Task** and enter a title (up to 255 characters). Optionally add a description (up to 5,000 characters) and a due date.
+  </Step>
+  <Step title="Choose a task type">
+    Tasks default to **checkbox** type (a simple to-do). You can also create a **decision** task, which presents clients with a question and 2–5 options to vote on.
+  </Step>
+  <Step title="Save">
+    Click **Create**. The task appears at the bottom of the list.
+  </Step>
+</Steps>
+
+### Reordering tasks
+
+Drag and drop tasks to reorder them. The updated order is saved automatically and reflects immediately for all viewers.
+
+### Completing tasks
+
+Check the checkbox on any task to mark it as complete. Only owners and admins can mark tasks complete from the dashboard. Task completion and due dates are visible to clients in the portal.
+
+### Decision tasks
+
+A decision task poses a question to clients with a set of labeled options. Clients vote directly from the portal. Once voting is complete, owners and admins can close the vote to lock results. Clients can see the vote count after the vote is closed.
+
+### Comments on tasks
+
+Like updates, tasks support threaded comments visible to both team members and assigned clients.
+
+---
+
+## Archiving projects
+
+Archiving a project hides it from clients and disables all editing. Use archiving for completed work you want to keep on record without cluttering the active view.
+
+<Tabs>
+  <Tab title="Archive">
+    Open the project, then click **Archive** in the top-right of the sidebar. Confirm the action in the dialog. The project is immediately hidden from the client portal and marked as archived.
+  </Tab>
+  <Tab title="Unarchive">
+    From the project list, filter by **Archived** to find the project. Open it and click **Unarchive**. The project returns to its previous status and is visible to assigned clients again.
+  </Tab>
+</Tabs>
+
+<Note>
+  Only owners can permanently delete a project. Deletion removes all associated files, tasks, updates, and invoices and cannot be undone.
+</Note>
+
+---
+
+## Exporting projects
+
+To export your full project list as a CSV, open **Projects** in the dashboard and click the **Export** button. The downloaded file includes the project name, status, description, start date, end date, number of assigned clients, archived status, and creation date.

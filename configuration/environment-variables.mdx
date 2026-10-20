@@ -1,0 +1,211 @@
+---
+title: "Environment Variables"
+description: "All configuration for Atrium is controlled through environment variables, passed via Docker or a .env file."
+---
+
+Every Atrium setting lives in an environment variable. In a Docker deployment you pass them with `-e` flags or an `environment:` block in your Compose file. When running from source, place them in a `.env` file at the project root.
+
+Only two variables are required to start Atrium. Everything else has a sensible default.
+
+<Warning>
+  The API will refuse to start if `DATABASE_URL` or `BETTER_AUTH_SECRET` is missing. In production, it will also refuse to start if `BETTER_AUTH_SECRET` is the default placeholder value or shorter than 32 characters.
+</Warning>
+
+---
+
+## App URLs
+
+By default Atrium auto-detects its URLs. You only need to set these explicitly when your API and web app are deployed on separate hostnames, or when Atrium is running behind a reverse proxy on a non-standard port.
+
+<ParamField path="WEB_URL" type="string" default="http://localhost:3000">
+  Public URL of the web frontend. The API uses this for CORS and Content Security Policy. Set this to the domain where your users access Atrium (e.g., `https://portal.yourcompany.com`).
+</ParamField>
+
+<ParamField path="API_URL" type="string" default="http://localhost:3001">
+  Internal URL the web server uses to call the API server-to-server. In a single-container deployment this stays at the default. In a split deployment, point this at your API service.
+</ParamField>
+
+<ParamField path="NEXT_PUBLIC_API_URL" type="string" default="http://localhost:3001">
+  Browser-facing API URL. Must be reachable from your users' browsers, so set this to a public hostname in production split-deployment setups.
+</ParamField>
+
+<Tip>
+  The official Docker image bundles both the API and the web app behind a Caddy reverse proxy on port 8080. In that setup you do not need to set any URL variables — Caddy handles internal routing automatically.
+</Tip>
+
+---
+
+## Database
+
+<ParamField path="DATABASE_URL" type="string" required>
+  PostgreSQL connection string. Format: `postgresql://user:password@host:5432/dbname?schema=public`
+
+  When using the built-in database (`USE_BUILT_IN_DB=true`, the default), this is generated automatically and you can leave it unset. When connecting to an external database you must provide it.
+</ParamField>
+
+<ParamField path="DIRECT_URL" type="string">
+  A non-pooled (direct) connection string used exclusively for schema migrations. Required when your `DATABASE_URL` points to a connection pooler such as PgBouncer or Supabase's Transaction Mode pooler, which don't support the `CREATE INDEX CONCURRENTLY` statements that migrations use.
+
+  ```bash
+  DATABASE_URL="postgresql://user:password@pgbouncer:6432/atrium"
+  DIRECT_URL="postgresql://user:password@postgres:5432/atrium"
+  ```
+</ParamField>
+
+<ParamField path="USE_BUILT_IN_DB" type="boolean" default="true">
+  Controls whether the Docker image starts its bundled PostgreSQL instance. Set to `false` and provide `DATABASE_URL` when you want to use your own database server.
+</ParamField>
+
+<ParamField path="SKIP_DB_PUSH" type="boolean" default="false">
+  When `true`, Atrium skips the automatic schema sync that runs on startup. Use this when your database connection goes through a pooler that doesn't support schema migrations (e.g., PgBouncer). Provide a `DIRECT_URL` for a non-pooled connection so schema sync can run separately.
+</ParamField>
+
+---
+
+## Auth
+
+<ParamField path="BETTER_AUTH_SECRET" type="string" required>
+  Secret key used to sign and verify authentication tokens. Must be at least 32 characters long and unique per deployment. The API will not start in production if this is set to the default placeholder value.
+
+  Generate a suitable value with:
+
+  ```bash
+  openssl rand -base64 32
+  ```
+</ParamField>
+
+<Warning>
+  Never share or commit your `BETTER_AUTH_SECRET`. If it is ever exposed, rotate it immediately — all active sessions will be invalidated.
+</Warning>
+
+---
+
+## Storage
+
+See [File Storage](/configuration/storage) for a full guide on each backend.
+
+<ParamField path="STORAGE_PROVIDER" type="string" default="local">
+  The file storage backend to use. Accepted values: `local`, `s3`, `minio`, `r2`.
+</ParamField>
+
+<ParamField path="UPLOAD_DIR" type="string" default="./uploads">
+  Directory where files are stored when `STORAGE_PROVIDER=local`. Must be a mounted Docker volume to survive container restarts.
+</ParamField>
+
+<ParamField path="S3_BUCKET" type="string" default="atrium">
+  Name of the S3 (or S3-compatible) bucket. Used by the `s3`, `minio`, and `r2` providers.
+</ParamField>
+
+<ParamField path="S3_REGION" type="string" default="us-east-1">
+  AWS region of the bucket. For MinIO and R2 this is still required by the SDK but the value is not significant — `us-east-1` works.
+</ParamField>
+
+<ParamField path="S3_ENDPOINT" type="string">
+  Custom S3-compatible endpoint URL. Required for `minio` and `r2`. Not used for the standard `s3` provider. Example: `https://your-account.r2.cloudflarestorage.com`.
+</ParamField>
+
+<ParamField path="S3_ACCESS_KEY" type="string">
+  Access key ID for the storage provider. Required for `s3`, `minio`, and `r2`.
+</ParamField>
+
+<ParamField path="S3_SECRET_KEY" type="string">
+  Secret access key for the storage provider. Required for `s3`, `minio`, and `r2`.
+</ParamField>
+
+<ParamField path="MAX_FILE_SIZE_MB" type="number" default="50">
+  Maximum file size allowed for uploads, in megabytes. Applies to all storage backends.
+</ParamField>
+
+---
+
+## Email
+
+See [Email Setup](/configuration/email) for a step-by-step configuration guide.
+
+<ParamField path="RESEND_API_KEY" type="string">
+  API key from your [Resend](https://resend.com) account. Required to send magic link login emails, client invitations, and password reset emails. If unset, Atrium displays a setup wizard on first launch.
+</ParamField>
+
+<ParamField path="EMAIL_FROM" type="string" default="noreply@yourdomain.com">
+  The sender address shown on all outbound emails. Must be from a domain you have verified in your Resend account.
+</ParamField>
+
+---
+
+## Payments
+
+These variables enable client invoice payments via Stripe. All are optional — leave them unset if you don't need Stripe payments.
+
+For Stripe Connect mode you also need `STRIPE_MODE` and the corresponding secret key. See [Stripe Connect](/payments/stripe-connect) for the full setup guide.
+
+<ParamField path="STRIPE_CONNECT_CLIENT_ID" type="string">
+  Stripe Connect platform client ID (starts with `ca_`). Required for Stripe Connect mode. Enables the "Connect with Stripe" OAuth flow so clients can pay invoices directly.
+</ParamField>
+
+<ParamField path="STRIPE_CONNECT_WEBHOOK_SECRET" type="string">
+  Webhook signing secret for Stripe Connect events (starts with `whsec_`). Required for Stripe Connect mode.
+</ParamField>
+
+<ParamField path="STRIPE_MODE" type="string" default="test">
+  Controls which Stripe environment to use. Accepted values: `test`, `live`. Used with Stripe Connect mode.
+</ParamField>
+
+<ParamField path="STRIPE_TEST_SECRET_KEY" type="string">
+  Your platform Stripe secret key for test mode (starts with `sk_test_`). Used with Stripe Connect mode when `STRIPE_MODE=test`.
+</ParamField>
+
+<ParamField path="STRIPE_LIVE_SECRET_KEY" type="string">
+  Your platform Stripe secret key for live mode (starts with `sk_live_`). Used with Stripe Connect mode when `STRIPE_MODE=live`.
+</ParamField>
+
+<ParamField path="STRIPE_CURRENCY" type="string" default="usd">
+  ISO 4217 currency code for invoice payments. Examples: `usd`, `eur`, `gbp`. Applies to all invoices across the organization.
+</ParamField>
+
+---
+
+## Security
+
+<ParamField path="SECURE_COOKIES" type="boolean" default="true">
+  Controls the `Secure` flag on session cookies. Defaults to `true` when `NODE_ENV=production`.
+
+  You should only set this to `false` if Atrium is accessed over plain HTTP with no TLS-terminating reverse proxy anywhere in the chain — for example, a local Unraid installation without HTTPS.
+</ParamField>
+
+<Warning>
+  Setting `SECURE_COOKIES=false` allows session tokens to be transmitted over unencrypted connections. Using a reverse proxy with HTTPS (Caddy, nginx, Traefik) is strongly recommended instead of disabling secure cookies.
+</Warning>
+
+<ParamField path="FIREBASE_HOSTING" type="boolean" default="false">
+  Enable only when deploying the web app behind Firebase Hosting. Applies a cookie workaround required by the Firebase CDN.
+</ParamField>
+
+---
+
+## Analytics
+
+<ParamField path="NEXT_PUBLIC_TRACKERS" type="string">
+  A JSON array of script tag attribute objects. Each object is serialized into a `<script>` tag in the web app's `<head>`. You can add any script-based analytics provider — Umami, Plausible, Fathom, and others are supported.
+
+  ```bash
+  NEXT_PUBLIC_TRACKERS='[{"src":"https://umami.example.com/script.js","data-website-id":"abc-123","defer":"true"}]'
+  ```
+
+  Each key in the object becomes an attribute on the rendered `<script>` element. You can add multiple trackers by adding more objects to the array.
+</ParamField>
+
+---
+
+## Advanced
+
+<ParamField path="LOG_LEVEL" type="string" default="info">
+  Log verbosity level for the API, using Pino's log levels. Accepted values (least to most verbose): `fatal`, `error`, `warn`, `info`, `debug`, `trace`.
+</ParamField>
+
+<ParamField path="THROTTLE_LIMIT" type="number" default="100">
+  Maximum number of API requests per minute, per IP address. Raising this limit is useful when running end-to-end tests locally to avoid cascading 429 errors.
+</ParamField>
+
+<ParamField path="SIGNUP_THROTTLE_LIMIT" type="number" default="5">
+  Maximum number of signup requests per minute, per IP address. Separate from the general `THROTTLE_LIMIT` to limit abuse of the registration endpoint.
+</ParamField>

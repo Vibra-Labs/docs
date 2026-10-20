@@ -1,0 +1,127 @@
+{
+  "projectType": "saas",
+  "projectName": "Atrium",
+  "projectDescription": "A self-hosted client portal for agencies and freelancers to manage projects, share files, send invoices, and give clients a branded space to track their work.",
+  "theme": "almond",
+  "primaryColor": "#046c6c",
+  "lightColor": "#7cb4b4",
+  "darkColor": "#edf0f0",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "first-steps"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/projects",
+              "features/client-portal",
+              "features/file-sharing",
+              "features/invoicing",
+              "features/team"
+            ]
+          },
+          {
+            "group": "Branding",
+            "pages": [
+              "branding/white-label",
+              "branding/custom-domain"
+            ]
+          },
+          {
+            "group": "Payments",
+            "pages": [
+              "payments/overview",
+              "payments/stripe-direct",
+              "payments/stripe-connect"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/environment-variables",
+              "configuration/storage",
+              "configuration/email"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Self-Hosting",
+        "groups": [
+          {
+            "group": "Deployment",
+            "pages": [
+              "self-hosting/docker",
+              "self-hosting/docker-compose",
+              "self-hosting/unraid"
+            ]
+          },
+          {
+            "group": "Operations",
+            "pages": [
+              "self-hosting/updating",
+              "self-hosting/security",
+              "self-hosting/troubleshooting"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Project management with customizable status pipeline",
+    "Branded client portal at /portal for client-facing access",
+    "File sharing via local storage, Amazon S3, MinIO, or Cloudflare R2",
+    "Invoicing with PDF generation and draft/send workflow",
+    "Client payments via Stripe Checkout (Direct Keys or Connect)",
+    "White-label branding with custom colors and logo per organization",
+    "Role-based access: owner, admin, and client (member) roles",
+    "Magic link and email/password authentication via Better Auth",
+    "Multi-tenant: each agency is an isolated organization",
+    "Task management with drag-and-drop ordering",
+    "Project updates with image attachments and comments",
+    "In-app notifications with real-time polling and Web Push",
+    "Team members: invite additional admins/owners",
+    "Tags and labels for projects, clients, tasks, and files",
+    "CSV data export for projects, invoices, and tasks",
+    "Full-text global search across projects, files, and clients",
+    "Single Docker image bundling API, web app, and reverse proxy"
+  ],
+  "publicApiSurface": [
+    "GET /projects — list all projects (owner/admin)",
+    "POST /projects — create a project",
+    "GET /projects/mine — list client's own projects",
+    "GET /projects/statuses — list project status pipeline",
+    "POST /projects/:id/archive — archive a project",
+    "GET /invoices — list invoices (owner/admin)",
+    "POST /invoices — create an invoice",
+    "GET /invoices/mine — list client's invoices",
+    "GET /invoices/:id/pdf — download invoice PDF",
+    "POST /invoices/upload — upload an external invoice file",
+    "GET /files — list files for a project",
+    "POST /files/upload — upload a file",
+    "GET /files/:id/download — download a file",
+    "GET /clients — list clients in the organization",
+    "POST /clients/invite — invite a client by email",
+    "GET /branding — get organization branding",
+    "PUT /branding — update branding (colors, logo)",
+    "GET /projects/:id/updates — list project updates",
+    "POST /projects/:id/updates — post a project update",
+    "GET /search — global full-text search",
+    "GET /health — service health check",
+    "POST /auth/sign-in — email/password sign-in",
+    "POST /auth/sign-in/magic-link — magic link sign-in",
+    "POST /auth/sign-out — sign out",
+    "GET /payments/connect/callback — Stripe Connect OAuth callback",
+    "POST /payments/webhook — Stripe webhook receiver"
+  ]
+}

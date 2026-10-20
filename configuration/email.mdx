@@ -1,0 +1,130 @@
+---
+title: "Email Setup"
+description: "Configure Resend to enable magic link login, client invitations, and password reset emails in Atrium."
+---
+
+Atrium uses [Resend](https://resend.com) for all transactional email. Without email configured, magic link login and client invitation emails will not be delivered.
+
+<Note>
+  Email is optional. If you skip this step, password-based login still works. Magic link login and email-based client invitations will be unavailable until you add a Resend API key.
+</Note>
+
+When you first open Atrium without an email configuration, the setup wizard will prompt you to add your credentials. You can also configure email by setting the environment variables directly before your first launch.
+
+---
+
+## What Atrium sends
+
+Atrium sends the following transactional emails:
+
+| Email | Trigger |
+|---|---|
+| Magic link login | User requests a passwordless login link |
+| Client invitation | You invite a client to access a project portal |
+| Password reset | User requests a password reset link |
+
+All emails are sent from the address you set in `EMAIL_FROM`.
+
+---
+
+## Setup
+
+<Steps>
+  <Step title="Create a Resend account">
+    Go to [resend.com](https://resend.com) and sign up for a free account. The free tier allows up to 3,000 emails per month and 100 per day, which is sufficient for most agency and freelancer setups.
+  </Step>
+
+  <Step title="Verify your sending domain">
+    In the Resend dashboard, go to **Domains** and add the domain you want to send email from. Resend will give you DNS records (MX, TXT, DKIM) to add to your domain registrar.
+
+    Wait for the domain status to show **Verified** before continuing. Emails sent from an unverified domain will be rejected.
+
+    <Tip>
+      If you don't want to verify a full domain right away, Resend provides a shared `resend.dev` subdomain for testing. Emails sent via `resend.dev` are only delivered to addresses registered in your Resend account, so use a verified domain for production.
+    </Tip>
+  </Step>
+
+  <Step title="Create an API key">
+    In the Resend dashboard, go to **API Keys** and click **Create API Key**. Give it a descriptive name like `atrium-production`. You only need **Sending access** — read access is not required.
+
+    Copy the key immediately. Resend only shows it once.
+  </Step>
+
+  <Step title="Set the environment variables">
+    Add the following to your Docker environment or `.env` file:
+
+    ```bash
+    RESEND_API_KEY="re_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    EMAIL_FROM="noreply@yourdomain.com"
+    ```
+
+    `EMAIL_FROM` must use a domain you have verified in Resend. The display name is optional:
+
+    ```bash
+    EMAIL_FROM="Atrium <noreply@yourdomain.com>"
+    ```
+
+    In Docker Compose:
+
+    ```yaml
+    services:
+      atrium:
+        image: vibralabs/atrium:latest
+        ports:
+          - "8080:8080"
+        environment:
+          BETTER_AUTH_SECRET: "your-secret-here"
+          RESEND_API_KEY: "re_xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          EMAIL_FROM: "noreply@yourdomain.com"
+        volumes:
+          - atrium-db:/var/lib/postgresql/data
+          - atrium-uploads:/app/uploads
+        restart: unless-stopped
+
+    volumes:
+      atrium-db:
+      atrium-uploads:
+    ```
+  </Step>
+
+  <Step title="Restart Atrium and verify">
+    Restart your Atrium container to pick up the new variables:
+
+    ```bash
+    docker compose down && docker compose up -d
+    ```
+
+    To verify email is working, go to your Atrium login page and use the **Send magic link** option. You should receive an email within a few seconds. If it doesn't arrive, check the **Logs** tab in the Resend dashboard for delivery errors.
+  </Step>
+</Steps>
+
+---
+
+## Variable reference
+
+<ParamField path="RESEND_API_KEY" type="string">
+  Your Resend API key. Starts with `re_`. Without this, Atrium cannot send any email and will surface a configuration warning in the setup wizard.
+</ParamField>
+
+<ParamField path="EMAIL_FROM" type="string" default="noreply@yourdomain.com">
+  The sender address shown on all outbound emails. Must be from a domain verified in your Resend account. Accepts a plain address or a `Name <address>` format.
+</ParamField>
+
+---
+
+## Troubleshooting
+
+**Emails are not arriving**
+
+Check the **Logs** section in the Resend dashboard. Common causes:
+- The domain in `EMAIL_FROM` is not verified in Resend.
+- The `RESEND_API_KEY` is incorrect or was deleted.
+- The recipient email is in a spam or blocked list.
+
+**Magic links expire before the user clicks them**
+
+Magic links expire after 10 minutes by default. This is not currently configurable via environment variable.
+
+**Invitation emails are sent but the link is broken**
+
+The invitation link is constructed using `WEB_URL`. If `WEB_URL` is not set correctly for your deployment, the link will point to the wrong host. Set `WEB_URL` to the public URL where your Atrium frontend is accessible.

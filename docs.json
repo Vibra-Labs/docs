@@ -1,0 +1,88 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "almond",
+  "name": "Atrium",
+  "favicon": "https://media.brand.dev/61041ffe-8d9c-4aac-a1a4-f47b5683b5fe.webp",
+  "colors": {
+    "primary": "#046c6c",
+    "light": "#7cb4b4",
+    "dark": "#edf0f0"
+  },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/Vibra-Labs/Atrium"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "first-steps"
+            ]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/projects",
+              "features/client-portal",
+              "features/file-sharing",
+              "features/invoicing",
+              "features/team"
+            ]
+          },
+          {
+            "group": "Branding",
+            "pages": [
+              "branding/white-label",
+              "branding/custom-domain"
+            ]
+          },
+          {
+            "group": "Payments",
+            "pages": [
+              "payments/overview",
+              "payments/stripe-direct",
+              "payments/stripe-connect"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/environment-variables",
+              "configuration/storage",
+              "configuration/email"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Self-Hosting",
+        "groups": [
+          {
+            "group": "Deployment",
+            "pages": [
+              "self-hosting/docker",
+              "self-hosting/docker-compose",
+              "self-hosting/unraid"
+            ]
+          },
+          {
+            "group": "Operations",
+            "pages": [
+              "self-hosting/updating",
+              "self-hosting/security",
+              "self-hosting/troubleshooting"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

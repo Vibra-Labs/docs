@@ -1,0 +1,124 @@
+---
+title: "Docker Compose"
+description: "Run Atrium with Docker Compose, with options for a bundled or external PostgreSQL database."
+---
+
+Docker Compose is the recommended way to run Atrium in production. The official `docker-compose.yml` starts a PostgreSQL container alongside Atrium and wires them together automatically.
+
+## Generate a secret
+
+Before you start, generate a value for `BETTER_AUTH_SECRET`:
+
+```bash
+openssl rand -base64 32
+```
+
+Keep this value — you'll need it in the next step. It must be at least 32 characters and should be treated like a password.
+
+## Built-in database
+
+The default configuration starts Atrium with a dedicated PostgreSQL 16 container.
+
+```yaml
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-atrium}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-atrium}
+      POSTGRES_DB: ${POSTGRES_DB:-atrium}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-atrium}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  atrium:
+    image: vibralabs/atrium:latest
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-atrium}:${POSTGRES_PASSWORD:-atrium}@postgres:5432/${POSTGRES_DB:-atrium}"
+      BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:-change-me-to-a-random-string-at-least-32-chars}"
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  uploads:
+```
+
+Save this as `docker-compose.yml`, then start Atrium:
+
+```bash
+BETTER_AUTH_SECRET=$(openssl rand -base64 32) \
+POSTGRES_PASSWORD=your-secure-password \
+docker compose up -d
+```
+
+Open `http://localhost:8080` and create your account.
+
+<Tip>
+You can also put `BETTER_AUTH_SECRET` and `POSTGRES_PASSWORD` in a `.env` file next to your `docker-compose.yml` so you don't have to pass them on the command line every time.
+</Tip>
+
+## External database
+
+If you already have a PostgreSQL instance, skip the bundled `postgres` service and point Atrium at your existing database:
+
+```yaml
+services:
+  atrium:
+    image: vibralabs/atrium:latest
+    ports:
+      - "8080:8080"
+    environment:
+      USE_BUILT_IN_DB: "false"
+      DATABASE_URL: "postgresql://user:password@your-db-host:5432/atrium"
+      BETTER_AUTH_SECRET: "${BETTER_AUTH_SECRET:-change-me-to-a-random-string-at-least-32-chars}"
+    volumes:
+      - uploads:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  uploads:
+```
+
+<Note>
+The database schema is applied automatically on startup. If your connection goes through a pooler like PgBouncer, set `SKIP_DB_PUSH=true` and add a `DIRECT_URL` pointing to a non-pooled connection. See [Docker](/self-hosting/docker) for details.
+</Note>
+
+## Volume mounts
+
+| Named volume | Container path | Purpose |
+|---|---|---|
+| `pgdata` | `/var/lib/postgresql/data` | PostgreSQL data for the bundled database |
+| `uploads` | `/app/uploads` | Uploaded files when using local storage |
+
+Docker manages these as named volumes. The data lives on your host under Docker's volume directory and persists across container restarts and image updates.
+
+## Starting and stopping
+
+```bash
+# Start in the background
+docker compose up -d
+
+# Stop without removing volumes
+docker compose down
+
+# Stop and remove all volumes (destroys data)
+docker compose down -v
+```
+
+<Warning>
+`docker compose down -v` deletes your named volumes, including the database and uploaded files. Only run this if you intend to wipe all data.
+</Warning>
+
+## Adding more environment variables
+
+For the full list of environment variables (storage, email, Stripe, rate limiting, and more), see [Docker](/self-hosting/docker#environment-variables).

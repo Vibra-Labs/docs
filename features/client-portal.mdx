@@ -1,0 +1,102 @@
+---
+title: "Client Portal"
+description: "A branded self-service portal at /portal where your clients view projects, files, invoices, and updates."
+---
+
+The client portal is a dedicated interface for your clients — separate from your team's dashboard. It lives at `/portal` on your Atrium URL and gives each client a focused view of their own work. Your branding (logo and colors) is applied automatically so the portal feels like a native part of your agency's product.
+
+<Note>
+  Clients only see projects, files, and invoices that you have explicitly assigned to them. They have no visibility into other clients' work or your internal dashboard.
+</Note>
+
+---
+
+## What clients see
+
+When a client logs in to the portal they land on their **Projects** list. From there, every project detail page has four tabs:
+
+| Tab | What's in it |
+|---|---|
+| **Updates** | Progress notes posted by you or the client, with image and file attachments |
+| **Tasks** | Checklist tasks and decision polls created by your team |
+| **Files** | Files uploaded to the project, with download links |
+| **Invoices** | Invoices issued against the project, with payment links |
+
+The project sidebar shows the project name, description, a read-only status progress bar, and the project timeline (start and end dates) when set.
+
+---
+
+## Client authentication
+
+Clients can sign in using either method:
+
+<Tabs>
+  <Tab title="Magic link">
+    The client enters their email address on the login page. Atrium sends a one-time sign-in link to their inbox. Clicking the link logs them in immediately — no password required.
+  </Tab>
+  <Tab title="Email and password">
+    Clients who prefer a password can set one from their account settings in the portal. They sign in with their email address and password on the standard login screen.
+  </Tab>
+</Tabs>
+
+Clients accept their initial invitation via a unique link you generate from the **People → Clients** section of the dashboard. See [Team Members](/features/team) for how to invite clients.
+
+---
+
+## Notifications
+
+Atrium keeps clients informed of activity on their projects through two notification channels:
+
+<AccordionGroup>
+  <Accordion title="In-app notifications">
+    A notification indicator appears in the portal when there are new updates, file uploads, or invoices on the client's projects. Notifications are fetched by real-time polling so the count updates without requiring a page refresh.
+  </Accordion>
+  <Accordion title="Push notifications">
+    Clients can opt in to web push notifications (Web Push / VAPID). Once enabled, they receive browser notifications for new activity even when the portal tab is not open. Clients can manage this preference from their portal settings.
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Paying invoices
+
+Clients can pay invoices directly from the portal without leaving your branded experience. On the **Invoices** tab of any project, an unpaid invoice shows a **Pay** button that opens a Stripe Checkout session. After a successful payment, the invoice status updates to **Paid** in both the portal and your dashboard.
+
+<Note>
+  Invoice payments require Stripe to be configured on your Atrium instance. See the [Payments Overview](/payments/overview) for instructions.
+</Note>
+
+---
+
+## Portal branding
+
+The portal inherits your organization's branding settings automatically. You can customize:
+
+- **Logo** — Uploaded from **Settings → Branding**. The logo appears in the portal header and is also used as the browser favicon.
+- **Primary color** — Sets the accent color used for buttons, links, and the active status indicator in the project progress bar.
+
+Changes take effect immediately for all clients.
+
+---
+
+## Client account settings
+
+Clients can manage their own account from the **Settings** page in the portal (`/portal/settings`). They can:
+
+- Update their display name
+- Change their password
+- Update their profile (company, phone, address, website, description)
+- Delete their account
+
+Profile data entered by clients is also visible to you in the **People → Clients** section of the dashboard.
+
+---
+
+## Portal navigation
+
+The portal sidebar links to the following sections:
+
+- **Projects** — All projects assigned to the client
+- **Settings** — Account and profile settings
+
+There is no separate files or invoices listing at the top level — clients access files and invoices through the project they belong to.

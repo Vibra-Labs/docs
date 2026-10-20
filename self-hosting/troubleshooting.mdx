@@ -1,0 +1,139 @@
+---
+title: "Troubleshooting"
+description: "Solutions for common issues when self-hosting Atrium."
+---
+
+<AccordionGroup>
+  <Accordion title="403 Invalid or missing CSRF token">
+    **Cause:** Atrium sets cookies with the `Secure` flag by default, which tells browsers to only send them over HTTPS. When you access Atrium over plain HTTP, the browser silently drops the cookies and every request fails with a 403.
+
+    **Fix:** Set `SECURE_COOKIES=false` in your container's environment variables.
+
+    ```bash
+    -e SECURE_COOKIES=false
+    ```
+
+    On Unraid, add `SECURE_COOKIES` as an environment variable with value `false` — make sure both the Key and Value fields are filled in.
+
+    If you have an HTTPS reverse proxy in front of Atrium, do not set this. Instead, make sure your proxy is correctly forwarding the `X-Forwarded-Proto` header and that Atrium is receiving requests over the proxy, not directly over HTTP.
+  </Accordion>
+
+  <Accordion title="Missing required environment variable: BETTER_AUTH_SECRET">
+    **Cause:** The API refuses to start without `BETTER_AUTH_SECRET`, or the value is shorter than 32 characters.
+
+    **Fix:** Generate a valid secret and pass it to the container:
+
+    ```bash
+    openssl rand -base64 32
+    ```
+
+    On Unraid, verify that both the **Name/Key** field (`BETTER_AUTH_SECRET`) and the **Value** field are filled in. Unraid silently drops any variable where the Key field is empty.
+
+    The value must be at least 32 characters. A base64 string from `openssl rand -base64 32` is always 44 characters, which satisfies this requirement.
+  </Accordion>
+
+  <Accordion title="API fails to start / 502 errors">
+    **Cause:** The web interface loads but all API calls return 502. The API process inside the container crashed on startup.
+
+    **Fix:** Check the container logs:
+
+    ```bash
+    docker logs atrium
+    ```
+
+    Scroll up from any "API failed to start" message to find the root cause. The most common causes are:
+
+    - `BETTER_AUTH_SECRET` is not set
+    - `BETTER_AUTH_SECRET` is set but shorter than 32 characters
+    - A required environment variable is missing or malformed
+
+    Fix the reported variable and restart the container.
+  </Accordion>
+
+  <Accordion title="Container exits immediately with code 1">
+    **Cause:** A missing or invalid environment variable caused the startup script to abort.
+
+    **Fix:** Check the logs for the specific error:
+
+    ```bash
+    docker logs atrium
+    ```
+
+    The startup validation prints the name of the missing variable before exiting. Set the variable, then restart the container. Common culprits are `BETTER_AUTH_SECRET` (missing or too short) and `DATABASE_URL` (required when `USE_BUILT_IN_DB=false`).
+  </Accordion>
+
+  <Accordion title="Data not persisting after restart">
+    **Cause:** The container is not using persistent volume mounts. Docker container filesystems are ephemeral — any data written inside the container is lost when the container is removed.
+
+    **Fix:** Verify your volume mounts include both paths:
+
+    | Container path | Purpose |
+    |---|---|
+    | `/var/lib/postgresql/data` | PostgreSQL database |
+    | `/app/uploads` | Uploaded files |
+
+    With `docker run`:
+
+    ```bash
+    -v atrium-db:/var/lib/postgresql/data \
+    -v atrium-uploads:/app/uploads
+    ```
+
+    On Unraid, verify the host paths are set to `/mnt/user/appdata/atrium/db` and `/mnt/user/appdata/atrium/uploads` and that the directories exist.
+  </Accordion>
+
+  <Accordion title="Port not accessible">
+    **Cause:** The container's internal port is mapped incorrectly, or the host port is being blocked.
+
+    **Fix:** The container always listens on port `8080` internally — this cannot be changed. Only the host port (the left side of the mapping) can vary.
+
+    Correct mapping:
+
+    ```bash
+    -p 8080:8080
+    # or a custom host port:
+    -p 9000:8080
+    ```
+
+    If you set the container port to something other than `8080`, Atrium will not respond. On Unraid, check that the container port in the port mapping is exactly `8080`.
+  </Accordion>
+
+  <Accordion title="Emails not sending">
+    **Cause:** Email notifications require a Resend API key and a verified sender domain.
+
+    **Fix:** Add both environment variables to your container:
+
+    ```bash
+    -e RESEND_API_KEY=re_your_api_key \
+    -e EMAIL_FROM=noreply@yourdomain.com
+    ```
+
+    `EMAIL_FROM` must use a domain that you have verified in your [Resend dashboard](https://resend.com). Unverified domains will cause Resend to reject the requests silently. If `RESEND_API_KEY` is not set, Atrium starts without email support — invitations and password resets will not be delivered.
+  </Accordion>
+
+  <Accordion title="Stripe webhook not firing">
+    **Cause:** Stripe sends webhook events to the URL configured in your Stripe dashboard. If `API_URL` is not set to your public HTTPS URL, the webhook endpoint Atrium registers will be unreachable from Stripe's servers.
+
+    **Fix:** Set `API_URL` to the public HTTPS URL where your Atrium API is reachable:
+
+    ```bash
+    -e API_URL=https://your-atrium-domain.com
+    ```
+
+    Then verify in the Stripe Dashboard under **Developers → Webhooks** that the endpoint URL matches and that recent webhook deliveries are showing a `200` response. Stripe retries failed webhooks, so once the URL is correct, previously failed events may be re-delivered.
+  </Accordion>
+
+  <Accordion title="Standard OAuth is disabled (Stripe Connect)">
+    **Cause:** Stripe Connect's OAuth flow (the "Connect with Stripe" button) requires Standard OAuth to be enabled in your Stripe platform settings. This is disabled by default.
+
+    **Fix:** In the Stripe Dashboard, go to **Settings → Connect** and enable **Standard OAuth**. Without this, clients will see an error when attempting to connect their Stripe account for invoice payments.
+  </Accordion>
+
+  <Accordion title="Invoice paid but still shows as overdue">
+    **Cause:** Atrium marks invoices as paid when it receives a `checkout.session.completed` webhook from Stripe. If the webhook delivery failed, Atrium never received the confirmation and the invoice status was not updated.
+
+    **Fix:** Open the Stripe Dashboard and go to **Developers → Webhooks**. Find the endpoint for your Atrium instance and check the event log for failed deliveries. Stripe lets you resend individual events — click the failed event and select **Resend**. Once Atrium receives the event, the invoice status will update automatically.
+
+    If webhook deliveries are consistently failing, verify that `API_URL` is set to your public HTTPS URL and that the URL is reachable from the internet.
+  </Accordion>
+</AccordionGroup>

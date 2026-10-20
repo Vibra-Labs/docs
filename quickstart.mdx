@@ -1,0 +1,141 @@
+---
+title: "Quick Start"
+description: "Get Atrium running in minutes with a single Docker container that includes everything — API, web app, and database."
+---
+
+The fastest way to run Atrium is with the pre-built Docker image. It bundles the API, web app, Caddy reverse proxy, and PostgreSQL into a single container on port **8080**. The only variable you must provide is `BETTER_AUTH_SECRET`.
+
+<Steps>
+  <Step title="Generate a secret">
+    Run this command to generate a secure random secret for signing auth tokens:
+
+    ```bash
+    openssl rand -base64 32
+    ```
+
+    Copy the output — you'll use it in the next step.
+  </Step>
+
+  <Step title="Start the container">
+    Run Atrium with two persistent volumes: one for the database, one for uploaded files.
+
+    ```bash
+    docker run -d \
+      --name atrium \
+      -p 8080:8080 \
+      -v atrium-db:/var/lib/postgresql/data \
+      -v atrium-uploads:/app/uploads \
+      -e BETTER_AUTH_SECRET=your-generated-secret-here \
+      vibralabs/atrium:latest
+    ```
+
+    <Note>
+      Replace `your-generated-secret-here` with the value from the previous step. The secret must be at least 32 characters long.
+    </Note>
+  </Step>
+
+  <Step title="Open Atrium">
+    Navigate to [http://localhost:8080](http://localhost:8080). The app loads in a few seconds while the database initializes on first start.
+
+    From here, follow the [First Steps](/first-steps) guide to create your account and set up your first project.
+  </Step>
+</Steps>
+
+## Docker Compose
+
+If you prefer Compose, create a `docker-compose.yml` with the following content:
+
+```yaml
+services:
+  atrium:
+    image: vibralabs/atrium:latest
+    ports:
+      - "8080:8080"
+    environment:
+      BETTER_AUTH_SECRET: "change-me-to-a-random-string-at-least-32-chars"
+    volumes:
+      - atrium-db:/var/lib/postgresql/data
+      - atrium-uploads:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  atrium-db:
+  atrium-uploads:
+```
+
+Then start it:
+
+```bash
+docker compose up -d
+```
+
+<Warning>
+  Do not use the example value for `BETTER_AUTH_SECRET` in production. Generate a unique secret with `openssl rand -base64 32` before you deploy.
+</Warning>
+
+## What's included
+
+The `vibralabs/atrium` image contains everything you need to run:
+
+| Component | Details |
+|---|---|
+| Web app | Frontend, served via Caddy |
+| API | REST API |
+| Database | PostgreSQL 16 (built-in, optional) |
+| Reverse proxy | Caddy — handles routing between web and API |
+
+The database schema is applied automatically on every startup, so upgrades require no manual migration step.
+
+## Using an external database
+
+If you already manage a PostgreSQL instance, you can disable the built-in database:
+
+<CodeGroup>
+```bash docker run
+docker run -d \
+  --name atrium \
+  -p 8080:8080 \
+  -v atrium-uploads:/app/uploads \
+  -e USE_BUILT_IN_DB=false \
+  -e DATABASE_URL=postgresql://user:password@your-db-host:5432/atrium \
+  -e BETTER_AUTH_SECRET=your-generated-secret-here \
+  vibralabs/atrium:latest
+```
+
+```yaml docker-compose.yml
+services:
+  atrium:
+    image: vibralabs/atrium:latest
+    ports:
+      - "8080:8080"
+    environment:
+      USE_BUILT_IN_DB: "false"
+      DATABASE_URL: "postgresql://user:password@your-db-host:5432/atrium"
+      BETTER_AUTH_SECRET: "change-me-to-a-random-string-at-least-32-chars"
+    volumes:
+      - atrium-uploads:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  atrium-uploads:
+```
+</CodeGroup>
+
+<Tip>
+  If your database connection goes through a pooler like PgBouncer, set `SKIP_DB_PUSH=true` and provide a direct connection string via `DIRECT_URL` so schema sync works correctly.
+</Tip>
+
+## Common environment variables
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `BETTER_AUTH_SECRET` | Yes | — | Random string (min 32 chars) for signing auth tokens |
+| `USE_BUILT_IN_DB` | No | `true` | Set to `false` to use an external PostgreSQL instance |
+| `DATABASE_URL` | No | auto-generated | Required when `USE_BUILT_IN_DB` is `false` |
+| `STORAGE_PROVIDER` | No | `local` | File storage backend: `local`, `s3`, `minio`, or `r2` |
+| `RESEND_API_KEY` | No | — | Resend API key for email notifications (magic links, invites) |
+| `EMAIL_FROM` | No | `noreply@yourdomain.com` | Sender address for outbound email |
+| `MAX_FILE_SIZE_MB` | No | `50` | Maximum upload size in megabytes |
+| `SECURE_COOKIES` | No | `true` | Set to `false` only when accessing over plain HTTP with no HTTPS anywhere in the chain |
+
+For the full list of configuration options, see the self-hosting documentation.

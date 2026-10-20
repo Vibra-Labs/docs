@@ -1,0 +1,98 @@
+---
+title: "Docker"
+description: "Run Atrium as a single Docker container with a built-in PostgreSQL database."
+---
+
+Atrium ships as a single Docker image (`vibralabs/atrium:latest`) that bundles the API, web app, Caddy reverse proxy, and an optional built-in PostgreSQL database. One container, one port.
+
+## Quick start
+
+The only required environment variable is `BETTER_AUTH_SECRET` — a random string of at least 32 characters used to sign authentication tokens.
+
+```bash
+docker run -d \
+  --name atrium \
+  -p 8080:8080 \
+  -v atrium-db:/var/lib/postgresql/data \
+  -v atrium-uploads:/app/uploads \
+  -e BETTER_AUTH_SECRET=$(openssl rand -base64 32) \
+  vibralabs/atrium:latest
+```
+
+Open `http://localhost:8080` and create your account.
+
+<Note>
+The database schema is applied automatically on every startup. You do not need to run migrations manually.
+</Note>
+
+## Using an external database
+
+If you already have a PostgreSQL instance, disable the built-in database and provide your connection string:
+
+```bash
+docker run -d \
+  --name atrium \
+  -p 8080:8080 \
+  -v atrium-uploads:/app/uploads \
+  -e USE_BUILT_IN_DB=false \
+  -e DATABASE_URL=postgresql://user:password@your-db-host:5432/atrium \
+  -e BETTER_AUTH_SECRET=$(openssl rand -base64 32) \
+  vibralabs/atrium:latest
+```
+
+When `USE_BUILT_IN_DB=false`, you can omit the `/var/lib/postgresql/data` volume mount.
+
+### Connection poolers (PgBouncer)
+
+If your database connection goes through a pooler like PgBouncer, schema migrations will fail because they require a direct session-mode connection. Set `SKIP_DB_PUSH=true` to skip the automatic migration, then provide a `DIRECT_URL` pointing to the non-pooled connection:
+
+```bash
+-e SKIP_DB_PUSH=true \
+-e DIRECT_URL=postgresql://user:password@your-db-host:5432/atrium \
+```
+
+## Environment variables
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `BETTER_AUTH_SECRET` | Yes | — | Random string (min 32 chars) for signing auth tokens |
+| `USE_BUILT_IN_DB` | No | `true` | Set to `false` to use an external database |
+| `DATABASE_URL` | No | auto-generated | PostgreSQL connection string (required when `USE_BUILT_IN_DB=false`) |
+| `SECURE_COOKIES` | No | `true` | Set to `false` only when accessing over plain HTTP with no HTTPS reverse proxy |
+| `SKIP_DB_PUSH` | No | `false` | Skip automatic schema sync on startup |
+| `DIRECT_URL` | No | — | Direct (non-pooled) database URL used only for schema migrations |
+| `STORAGE_PROVIDER` | No | `local` | File storage backend: `local`, `s3`, `minio`, or `r2` |
+| `S3_ENDPOINT` | No | — | S3-compatible endpoint URL |
+| `S3_REGION` | No | `us-east-1` | S3 region |
+| `S3_BUCKET` | No | `atrium` | S3 bucket name |
+| `S3_ACCESS_KEY` | No | — | S3 access key |
+| `S3_SECRET_KEY` | No | — | S3 secret key |
+| `RESEND_API_KEY` | No | — | Resend API key for email notifications |
+| `EMAIL_FROM` | No | `noreply@yourdomain.com` | Sender address for outbound email |
+| `MAX_FILE_SIZE_MB` | No | `50` | Maximum upload size in megabytes |
+| `STRIPE_CONNECT_CLIENT_ID` | No | — | Stripe Connect platform client ID (`ca_...`) |
+| `STRIPE_CONNECT_WEBHOOK_SECRET` | No | — | Signing secret for the Stripe Connect webhook (`whsec_...`) |
+| `STRIPE_CURRENCY` | No | `usd` | ISO 4217 currency code for invoice payments |
+| `THROTTLE_LIMIT` | No | `100` | Global rate limit in requests per minute |
+| `SIGNUP_THROTTLE_LIMIT` | No | `5` | Rate limit for signup requests per minute |
+
+## Volumes
+
+| Container path | Purpose |
+|---|---|
+| `/var/lib/postgresql/data` | Built-in PostgreSQL data — omit when using an external database |
+| `/app/uploads` | Uploaded files — omit when using S3/MinIO/R2 storage |
+
+<Warning>
+Always mount these volumes (or use an external database and S3 storage) so your data survives container restarts and image updates. Updating the image does not delete volume data.
+</Warning>
+
+## Building from source
+
+If you prefer to build the image yourself instead of pulling from Docker Hub:
+
+```bash
+git clone https://github.com/Vibra-Labs/Atrium.git
+cd Atrium
+docker build -f docker/unified.Dockerfile -t atrium .
+```

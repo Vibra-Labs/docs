@@ -1,0 +1,123 @@
+---
+title: "Invoicing"
+description: "Create itemized invoices, generate PDFs, send them to clients, and track payment status from draft to paid."
+---
+
+Atrium has a built-in invoicing workflow. You create invoices from the dashboard, send them to clients, and clients can pay directly from the portal. Invoice data stays inside your Atrium instance — no third-party invoicing tool required.
+
+---
+
+## Invoice statuses
+
+An invoice moves through the following statuses during its lifecycle:
+
+| Status | Meaning |
+|---|---|
+| **Draft** | Created but not yet sent to the client |
+| **Sent** | Shared with the client and awaiting payment |
+| **Paid** | Payment confirmed |
+| **Overdue** | Past the due date and still unpaid |
+| **Cancelled** | Voided, no longer actionable |
+
+---
+
+## Creating an invoice
+
+<Steps>
+  <Step title="Open a project">
+    Navigate to **Projects**, open the relevant project, and click the **Invoices** tab.
+  </Step>
+  <Step title="Create a new invoice">
+    Click **New Invoice**.
+  </Step>
+  <Step title="Add line items">
+    Add one or more line items. Each line item requires a **description**, a **quantity**, and a **unit price** (in the smallest currency unit, e.g. cents). The total is calculated automatically from your line items.
+
+    You can add up to 100 line items per invoice.
+  </Step>
+  <Step title="Set a due date and notes">
+    Optionally add a **due date** and **notes** (up to 2,000 characters). Notes appear on the PDF and in the client's portal view.
+  </Step>
+  <Step title="Save as draft">
+    Click **Save**. The invoice is created with **Draft** status. Clients cannot see it yet.
+  </Step>
+</Steps>
+
+---
+
+## Sending an invoice
+
+When an invoice is ready to send, update its status from **Draft** to **Sent**. This makes the invoice visible to the assigned clients in the portal.
+
+<Steps>
+  <Step title="Open the invoice">
+    From the **Invoices** tab of the project, click the invoice you want to send.
+  </Step>
+  <Step title="Change the status">
+    Set the status to **Sent** and save. The invoice is now visible in the client portal.
+  </Step>
+</Steps>
+
+<Tip>
+  You can change the status back to **Draft** at any time before payment is recorded.
+</Tip>
+
+---
+
+## PDF generation and download
+
+Every invoice can be downloaded as a PDF. Atrium generates the PDF on demand from the invoice data.
+
+- **From the dashboard:** Open the invoice and click **Download PDF**.
+- **From the portal:** Clients can download a PDF of any invoice sent to them.
+
+The PDF filename is based on the invoice number.
+
+---
+
+## Uploading an existing PDF invoice
+
+If you already have an invoice PDF from another tool, you can upload it as an **uploaded invoice** instead of recreating it line-by-line in Atrium.
+
+<Steps>
+  <Step title="Open the Invoices tab">
+    Navigate to the project and click **Invoices**.
+  </Step>
+  <Step title="Upload an invoice">
+    Click **Upload Invoice** and select your PDF or image file (PDF, JPEG, PNG, and WebP are accepted).
+  </Step>
+  <Step title="Set the amount and details">
+    Enter the total **amount**, an optional **due date**, and optional **notes**. The uploaded file is attached to the invoice record.
+  </Step>
+  <Step title="Save">
+    The invoice is saved as a draft. Send it to make it visible in the portal.
+  </Step>
+</Steps>
+
+<Note>
+  Uploaded invoices store the amount as a single value rather than individual line items. PDF generation is not available for uploaded invoices — clients download the original file you uploaded.
+</Note>
+
+---
+
+## Client payment
+
+Clients can pay invoices directly from the portal. On a **Sent** invoice, the portal shows a **Pay** button that starts a Stripe Checkout session. After a successful payment, the invoice status automatically updates to **Paid**.
+
+<Note>
+  Stripe must be configured on your Atrium instance to enable client payments. See the [Payments Overview](/payments/overview) for configuration steps.
+</Note>
+
+---
+
+## Tracking payment status
+
+The **Invoices** tab in a project shows all invoices and their current statuses at a glance. The main dashboard also displays your total **Outstanding** balance across all unpaid sent invoices.
+
+You can filter invoices by status (draft, sent, paid, overdue, cancelled) from the invoices list view.
+
+---
+
+## Exporting invoices
+
+To export all invoices as a CSV, open the invoices list in the dashboard and click **Export**. The downloaded file includes the invoice number, status, type, total amount, due date, associated project, notes, and creation date.

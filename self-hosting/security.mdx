@@ -1,0 +1,67 @@
+---
+title: "Security"
+description: "Built-in security defaults and recommendations for running Atrium in production."
+---
+
+## Built-in defaults
+
+Atrium ships with the following security controls enabled out of the box:
+
+| Control | Details |
+|---|---|
+| **Rate limiting** | 100 requests/min globally; 5 requests/min for signups |
+| **HTTPS cookie flag** | Session cookies are marked `Secure` by default (`SECURE_COOKIES=true`) |
+| **CORS** | Locked to a single origin (`WEB_URL`) with credentials |
+| **Helmet CSP** | Content Security Policy restricts scripts, styles, images, and connections to `'self'` |
+| **Input validation** | `ValidationPipe` with `whitelist` and `forbidNonWhitelisted` on all endpoints |
+| **Auth + role guards** | Every route requires authentication and the appropriate role, except explicitly public endpoints |
+| **Exception filter** | Stack traces are never sent to clients |
+| **File upload sanitization** | Dangerous file extensions are blocked server-side |
+| **Non-root containers** | The Docker image runs as a non-root `bun` user |
+| **Env var validation** | The API refuses to start if required environment variables are missing or invalid |
+
+## Production recommendations
+
+### Run behind an HTTPS reverse proxy
+
+Place Atrium behind a TLS-terminating reverse proxy such as [Caddy](https://caddyserver.com), [nginx](https://nginx.org), or [Traefik](https://traefik.io). This ensures all traffic between clients and your server is encrypted and allows you to keep `SECURE_COOKIES=true` (the default).
+
+<Warning>
+Do not set `SECURE_COOKIES=false` in production. This flag disables the `Secure` attribute on session cookies, exposing them to network interception. It should only be used on isolated local-network setups with no path to the internet — for example, a home Unraid server accessed exclusively over HTTP on a trusted LAN.
+</Warning>
+
+### Use a strong BETTER_AUTH_SECRET
+
+`BETTER_AUTH_SECRET` is used to sign authentication tokens. If this value is compromised, an attacker can forge valid sessions.
+
+- Generate it with `openssl rand -base64 32` — this produces a cryptographically random 44-character string.
+- Never reuse a secret across environments.
+- Store it like a password: in a secrets manager, not in a public repository.
+
+### Use an external database in production
+
+The built-in PostgreSQL database is convenient for getting started, but for production deployments consider using a managed PostgreSQL service or a dedicated database container with a strong password set via `POSTGRES_PASSWORD`.
+
+### Use S3/MinIO for file storage in production
+
+Local file storage (`STORAGE_PROVIDER=local`) ties uploads to the container's volume. For production, use an S3-compatible backend (`s3`, `minio`, or `r2`) so uploads are independent of the container lifecycle and can be backed up separately.
+
+## Rate limiting
+
+The global rate limit defaults to 100 requests/min per client. Signup requests are limited separately to 5 requests/min to slow brute-force account creation.
+
+Both limits are configurable via environment variables:
+
+```bash
+THROTTLE_LIMIT=100        # Global limit (requests per minute)
+SIGNUP_THROTTLE_LIMIT=5   # Signup-specific limit (requests per minute)
+```
+
+## SECURE_COOKIES
+
+| Setup | Recommended value |
+|---|---|
+| HTTPS reverse proxy (production) | `true` (default — no action needed) |
+| Plain HTTP, local network only | `false` |
+
+Set `SECURE_COOKIES=false` only when Atrium is accessed over plain HTTP with no TLS anywhere in the request path. Remove this override as soon as you add a reverse proxy with HTTPS.
